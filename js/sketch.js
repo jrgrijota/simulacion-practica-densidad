@@ -50,7 +50,7 @@ const INDICACIONES = [
 
 // ── Estado ─────────────────────────────────────────────────
 let nivel = 'guiada';          // 'guiada' | 'libre'
-let muestra = MUESTRAS[6];
+let muestra = MUESTRAS[Math.floor(Math.random() * MUESTRAS.length)];   // al azar, salvo ?muestra=N
 let capProbeta = 100;
 let forma = [];                // polígono de la muestra (unidades relativas)
 let tamano = { w: 40, h: 60 };
@@ -113,7 +113,6 @@ function setup() {
     rellenarTabla();
     setupControles();
     setupThemeSelector();
-    elegirMuestra(muestra.n);
     setNivel(nivel);
 }
 
@@ -174,7 +173,7 @@ function leerParametros() {
 //  Muestra, probeta y reinicio
 // ============================================================
 function elegirMuestra(n) {
-    muestra = MUESTRAS[n - 1];
+    muestra = tamanoAlAzar(MUESTRAS[n - 1]);
     document.getElementById('select-muestra').value = String(n);
     const rnd = aleatorioConSemilla(n * 7 + 3);
     forma = [];
@@ -189,6 +188,19 @@ function elegirMuestra(n) {
     const w = muestra.ancho;
     tamano = { w, h: muestra.vol * PX3_POR_ML / (RELLENO * w * w) };
     reiniciar();
+}
+
+// En el nivel libre cada muestra conserva su material, pero sale con otro tamaño
+// cada vez (y su masa, ρ·V): así cada alumno tiene sus propios números.
+// El ancho crece con la raíz cúbica del volumen y no pasa del que cabe en su probeta.
+function tamanoAlAzar(def) {
+    if (nivel !== 'libre') return { ...def };
+    const limite = def.ancho < 30 ? 29.9 : 41.5;
+    const maximo = Math.min(1.3, Math.pow(limite / def.ancho, 3));
+    const f = 0.7 + Math.random() * (maximo - 0.7);
+    const vol = Math.round(def.vol * f * 10) / 10;
+    const ancho = def.ancho * Math.cbrt(vol / def.vol);
+    return { ...def, vol, ancho, masa: Math.round(def.mat.rho * vol * 10) / 10 };
 }
 
 function reiniciar() {
@@ -833,7 +845,7 @@ function setNivel(n) {
         capProbeta = 100;
         document.getElementById('select-probeta').value = '100';
     }
-    reiniciar();
+    elegirMuestra(muestra.n);   // en el nivel libre, con un tamaño nuevo
     fitCanvas();
 }
 

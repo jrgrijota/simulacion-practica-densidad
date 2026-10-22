@@ -40,8 +40,11 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
 
 - La simulación **nunca muestra el volumen**: hay que leerlo en la escala de la probeta, con una
   lupa que amplía el menisco. La masa sí se lee en la pantalla de la balanza, como en el laboratorio.
-- Las 20 muestras son fijas (material, masa y volumen), para que el profesor pueda repartirlas por
-  número. Todas se hunden en agua. La forma es irregular para que la inmersión tenga sentido, y el
+- Hay 20 muestras numeradas y cada número es siempre del mismo material, para que el profesor pueda
+  repartirlas por número. Al abrir la simulación sale una al azar. En el nivel guiado la masa y el
+  volumen de cada muestra son fijos; en el nivel libre cambian cada vez que se elige la muestra (la
+  masa es ρ·V), así que cada alumno tiene sus propios números y la clave da el material y su
+  densidad. Todas se hunden en agua. La forma es irregular para que la inmersión tenga sentido, y el
   aspecto no delata el material.
 - Las muestras se dibujan **a escala**: su tamaño corresponde al agua que desplazan. Por eso son
   alargadas, como las que caben en una probeta real. Solo las más estrechas (5, 6, 12 y 15) caben en
@@ -60,7 +63,7 @@ Parámetros de la dirección, para repartir la práctica:
 | Parámetro | Efecto |
 |---|---|
 | `?nivel=libre` | Abre el nivel libre |
-| `?muestra=7` | Empieza con la muestra 7 (de 1 a 20) |
+| `?muestra=7` | Empieza con la muestra 7 (de 1 a 20); sin él, sale una al azar |
 | `?probeta=250` | En el nivel libre, empieza con la probeta de 250 mL (50, 100 o 250) |
 
 Por ahora la interfaz solo está en español; las traducciones se harán con la versión definitiva.
