@@ -89,7 +89,7 @@
                     </select>
                 </div>
                 <p class="field-hint only-guiada">Balanza electrónica de 0,1 g y probeta de 100 mL con divisiones de 1 mL.</p>
-                <p class="field-hint">Arrastra la muestra y la lupa con el ratón o con el dedo. Los botones ON y TARA están en la balanza.</p>
+                <p class="field-hint">Arrastra la muestra, el frasco lavador y la lupa con el ratón o con el dedo. Los botones ON y TARA están en la balanza.</p>
             </section>
 
             <hr class="divider">
@@ -111,24 +111,24 @@
                     <span class="marca" id="marca-m" aria-hidden="true"></span>
 
                     <label for="dato-vi">Volumen inicial <span class="label-hint">(<i>V</i><sub>i</sub>)</span></label>
-                    <input id="dato-vi" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="3">
+                    <input id="dato-vi" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="4">
                     <span class="unidad">mL</span>
                     <span class="marca" id="marca-vi" aria-hidden="true"></span>
 
                     <label for="dato-vf">Volumen final <span class="label-hint">(<i>V</i><sub>f</sub>)</span></label>
-                    <input id="dato-vf" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="5">
+                    <input id="dato-vf" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="6">
                     <span class="unidad">mL</span>
                     <span class="marca" id="marca-vf" aria-hidden="true"></span>
 
                     <hr class="cuaderno-sep">
 
                     <label for="dato-v">Volumen de la muestra <span class="label-hint">(<i>V</i> = <i>V</i><sub>f</sub> − <i>V</i><sub>i</sub>)</span></label>
-                    <input id="dato-v" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="6">
+                    <input id="dato-v" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="7">
                     <span class="unidad">cm³</span>
                     <span class="marca" id="marca-v" aria-hidden="true"></span>
 
                     <label for="dato-rho">Densidad <span class="label-hint">(<i>ρ</i> = <i>m</i> / <i>V</i>)</span></label>
-                    <input id="dato-rho" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="6">
+                    <input id="dato-rho" class="dato" type="text" inputmode="decimal" autocomplete="off" data-paso="7">
                     <span class="unidad">g/cm³</span>
                     <span class="marca" id="marca-rho" aria-hidden="true"></span>
                 </div>
@@ -159,6 +159,7 @@
             <section class="control-group">
                 <h2>Instrumentos</h2>
                 <div class="fila-botones">
+                    <button id="btn-vaciar" type="button" class="boton-panel">Vaciar la probeta</button>
                     <button id="btn-describir" type="button" class="boton-panel">Describir la escala</button>
                     <button id="btn-reiniciar" type="button" class="boton-panel">↺ Empezar de nuevo</button>
                 </div>
@@ -172,6 +173,8 @@
                         <li data-i18n="idea-ojos">Pon los <strong>ojos a la altura del agua</strong>. Si miras desde arriba o desde abajo, lees mal. En la lupa, la línea amarilla marca la altura de los ojos: ponla sobre la parte baja del menisco.</li>
                         <li data-i18n="idea-menisco">El agua forma una curva, el <strong>menisco</strong>. Lee la <strong>parte de abajo</strong> de la curva.</li>
                         <li data-i18n="idea-division">Fíjate en cuánto vale <strong>cada rayita</strong> antes de leer: en la probeta de 250 mL cada una vale 2 mL.</li>
+                        <li data-i18n="idea-cuidado">Baja la muestra <strong>con cuidado</strong> hasta el agua antes de soltarla. Si la dejas caer, el agua salpica, se sale de la probeta y la medida ya no vale.</li>
+                        <li data-i18n="idea-seca">Pesa la muestra <strong>seca</strong>, antes de meterla en el agua. Mojada pesa más.</li>
                         <li data-i18n="idea-unidades"><strong>1 mL = 1 cm³</strong>: el volumen que sube el agua es el volumen de la muestra.</li>
                     </ul>
                 </div>
@@ -188,6 +191,7 @@
                 <button id="btn-tarar" type="button" class="canvas-btn">⚖ Tarar</button>
                 <button id="btn-balanza" type="button" class="canvas-btn">↓ Poner en la balanza</button>
                 <button id="btn-probeta" type="button" class="canvas-btn">→ Meter en la probeta</button>
+                <button id="btn-agua" type="button" class="canvas-btn">💧 Echar agua</button>
                 <button id="btn-lupa" type="button" class="canvas-btn">🔍 Llevar la lupa al agua</button>
             </div>
 
@@ -223,6 +227,15 @@
             </div>
 
             <div id="canvas-container"></div>
+
+            <!-- Errores que obligan a empezar de nuevo -->
+            <div id="error-lab" class="error-lab" role="alertdialog" aria-modal="true" aria-labelledby="error-titulo" aria-describedby="error-texto" hidden>
+                <div class="error-caja">
+                    <h2 id="error-titulo"></h2>
+                    <p id="error-texto"></p>
+                    <button id="error-reiniciar" type="button" class="boton-panel boton-error">↺ Volver a empezar con la misma muestra</button>
+                </div>
+            </div>
             <div id="anuncio" class="sr-only" aria-live="polite"></div>
         </main>
 

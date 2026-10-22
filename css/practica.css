@@ -203,6 +203,41 @@ body.theme-contrast .resultado.bien { background: #000; border: 1.5px solid #00f
 body.theme-contrast .resultado.mal  { background: #000; border: 1.5px solid #ffaa00; color: #ffaa00; }
 body.theme-contrast .nota-libre, body.theme-contrast .nota-libre strong { color: #ffffff; }
 
+/* ── Error que obliga a empezar de nuevo ── */
+.simulation-panel { position: relative; }
+.error-lab {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.55);
+}
+.error-lab[hidden] { display: none; }
+.error-caja {
+    max-width: 460px;
+    background: #1c1c1c;
+    border: 1px solid #f0a832;
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+}
+.error-caja h2 { color: #f0a832; font-size: 1.05rem; margin-bottom: 10px; text-transform: none; letter-spacing: 0; }
+.error-caja p { font-size: 0.92rem; line-height: 1.5; color: #e0e0e0; margin-bottom: 16px; }
+.boton-error { border-color: #f0a832; color: #ffffff; white-space: normal; }
+body.theme-light .error-lab { background: rgba(30, 40, 60, 0.35); }
+body.theme-light .error-caja { background: #ffffff; border-color: #9a5a00; }
+body.theme-light .error-caja h2 { color: #9a5a00; }
+body.theme-light .error-caja p { color: #1a2030; }
+body.theme-light .boton-error { border-color: #9a5a00; color: #1a2030; }
+body.theme-contrast .error-lab { background: rgba(0, 0, 0, 0.8); }
+body.theme-contrast .error-caja { background: #000; border: 2px solid #ffaa00; }
+body.theme-contrast .error-caja h2 { color: #ffaa00; }
+body.theme-contrast .error-caja p { color: #ffffff; }
+.boton-panel:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* ── Pantallas estrechas: los botones van debajo del lienzo ── */
 @media (max-width: 1100px) {
     .simulation-panel { flex-direction: column; }

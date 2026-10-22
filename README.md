@@ -8,7 +8,7 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
 
 ## Niveles
 
-- **Guiada (paso a paso):** siete pasos numerados y un cuaderno de laboratorio en pantalla.
+- **Guiada (paso a paso):** ocho pasos numerados y un cuaderno de laboratorio en pantalla.
   La simulación comprueba cada lectura y cada cálculo al apuntarlos y, al final, si el material
   elegido en la tabla es el correcto.
 - **Libre (con guión en papel):** la simulación solo pone los instrumentos y el número de muestra.
@@ -19,14 +19,21 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
 
 ## Cómo se maneja
 
-- La **muestra** se arrastra con el ratón o con el dedo hasta el plato de la balanza o hasta la boca
-  de la probeta, donde baja despacio hasta el fondo. Si se suelta en otro sitio, vuelve a la bandeja
-  con un aviso: en el laboratorio las muestras solo se dejan en su sitio.
+- La probeta empieza **vacía**. Se llena arrastrando el **frasco lavador** hasta que su pico quede sobre
+  la boca: mientras está ahí, echa agua. «Vaciar la probeta» la deja vacía otra vez.
+- La **muestra** se arrastra con el ratón o con el dedo hasta el plato de la balanza o dentro de la
+  probeta. A la probeta hay que **bajarla con la mano hasta el agua** antes de soltarla: si se suelta
+  desde arriba, cae, el agua salpica y se sale, y hay que empezar de nuevo con la misma muestra.
+  Si se suelta en otro sitio, vuelve a la bandeja con un aviso: en el laboratorio las muestras solo
+  se dejan en su sitio.
+- Si se pesa la muestra **mojada**, después de sacarla de la probeta, la balanza marca de más
+  (el agua pegada) y hay que empezar de nuevo.
 - La **lupa** también se arrastra y amplía lo que tiene debajo. Su línea amarilla marca la altura de
   los ojos: se pone sobre la parte baja del menisco para leer.
 - Los botones **ON** y **TARA** se pulsan sobre la propia balanza.
 - **Con el teclado:** el tabulador lleva a unos botones que solo aparecen al recibir el foco
-  (encender, tarar, poner en la balanza, meter en la probeta y llevar la lupa al agua), y con el
+  (encender, tarar, poner en la balanza, meter en la probeta con cuidado, echar agua y llevar la
+  lupa al agua), y con el
   lienzo enfocado las flechas mueven la lupa. «Describir la escala» dice entre qué rayas está el agua.
 
 ## Criterio didáctico
@@ -36,7 +43,12 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
 - Las 20 muestras son fijas (material, masa y volumen), para que el profesor pueda repartirlas por
   número. Todas se hunden en agua. La forma es irregular para que la inmersión tenga sentido, y el
   aspecto no delata el material.
-- Las lecturas se aceptan con un margen de media división (±0,5 mL en la probeta de 100 mL).
+- Las muestras se dibujan **a escala**: su tamaño corresponde al agua que desplazan. Por eso son
+  alargadas, como las que caben en una probeta real. Solo las más estrechas (5, 6, 12 y 15) caben en
+  la de 50 mL.
+- En el nivel guiado solo se da por buena la **raya más cercana** al agua. La tabla de densidades y las
+  muestras están elegidas para que, con esas lecturas, la densidad calculada lleve siempre al material
+  correcto. En el nivel libre, con otras probetas, no tiene por qué ser así.
 
 ## Uso
 
