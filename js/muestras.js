@@ -7,14 +7,14 @@
 // Dos vecinos se separan al menos un 13 %: así, en el nivel guiado, ninguna
 // lectura que se da por buena lleva a otro material.
 const MATERIALES = [
-  { id: 'pvc',      nombre: 'PVC',      rho: 1.40,  aspecto: 'plastico-gris' },
-  { id: 'magnesio', nombre: 'Magnesio', rho: 1.74,  aspecto: 'metal' },
-  { id: 'teflon',   nombre: 'Teflón',   rho: 2.20,  aspecto: 'plastico-claro' },
-  { id: 'aluminio', nombre: 'Aluminio', rho: 2.70,  aspecto: 'metal' },
-  { id: 'titanio',  nombre: 'Titanio',  rho: 4.51,  aspecto: 'metal' },
-  { id: 'hierro',   nombre: 'Hierro',   rho: 7.87,  aspecto: 'metal' },
-  { id: 'cobre',    nombre: 'Cobre',    rho: 8.96,  aspecto: 'cobrizo' },
-  { id: 'plomo',    nombre: 'Plomo',    rho: 11.34, aspecto: 'metal' },
+  { id: 'pvc',      nombre: 'PVC',      rho: 1.40 },
+  { id: 'magnesio', nombre: 'Magnesio', rho: 1.74 },
+  { id: 'teflon',   nombre: 'Teflón',   rho: 2.20 },
+  { id: 'aluminio', nombre: 'Aluminio', rho: 2.70 },
+  { id: 'titanio',  nombre: 'Titanio',  rho: 4.51 },
+  { id: 'hierro',   nombre: 'Hierro',   rho: 7.87 },
+  { id: 'cobre',    nombre: 'Cobre',    rho: 8.96 },
+  { id: 'plomo',    nombre: 'Plomo',    rho: 11.34 },
 ];
 
 // Las 20 muestras son fijas para que el profesor pueda repartirlas por número
@@ -64,7 +64,7 @@ const MUESTRAS = MUESTRAS_DEF.map(d => {
 const PROBETAS = {
   50:  { cap: 50,  div: 1, medio: 5,  etiqueta: 10, ancho: 34, caudal: 6 },
   100: { cap: 100, div: 1, medio: 5,  etiqueta: 10, ancho: 48, caudal: 10 },
-  250: { cap: 250, div: 2, medio: 10, etiqueta: 50, ancho: 76, caudal: 24 },
+  250: { cap: 250, div: 2, medio: 10, etiqueta: 20, ancho: 76, caudal: 24 },
 };
 
 // Generador pseudoaleatorio con semilla: cada muestra tiene siempre la misma forma.

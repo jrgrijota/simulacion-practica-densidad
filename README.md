@@ -30,7 +30,8 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
   (el agua pegada) y hay que empezar de nuevo.
 - La **lupa** también se arrastra y amplía lo que tiene debajo. Su línea amarilla marca la altura de
   los ojos: se pone sobre la parte baja del menisco para leer.
-- Los botones **ON** y **TARA** se pulsan sobre la propia balanza.
+- Los botones **ON** y **TARA** se pulsan sobre la propia balanza, y **VACIAR**, en el pie de la probeta.
+- En la bandeja la muestra descansa tumbada; al cogerla se pone vertical.
 - **Con el teclado:** el tabulador lleva a unos botones que solo aparecen al recibir el foco
   (encender, tarar, poner en la balanza, meter en la probeta con cuidado, echar agua y llevar la
   lupa al agua), y con el
@@ -45,7 +46,7 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
   volumen de cada muestra son fijos; en el nivel libre cambian cada vez que se elige la muestra (la
   masa es ρ·V), así que cada alumno tiene sus propios números y la clave da el material y su
   densidad. Todas se hunden en agua. La forma es irregular para que la inmersión tenga sentido, y el
-  aspecto no delata el material.
+  aspecto no delata el material: todas están pintadas del mismo color mate.
 - Las muestras se dibujan **a escala**: su tamaño corresponde al agua que desplazan. Por eso son
   alargadas, como las que caben en una probeta real. Solo las más estrechas (5, 6, 12 y 15) caben en
   la de 50 mL.

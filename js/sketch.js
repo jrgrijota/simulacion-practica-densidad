@@ -8,13 +8,13 @@
 const CV_W = 900, CV_H = 600;
 
 // ── Geometría de la mesa (coordenadas del lienzo) ──────────
-const MESA_Y   = 500;                 // borde superior de la mesa
+const MESA_Y   = 520;                 // borde superior de la mesa
 const BANDEJA  = { x: 120, ancho: 140 };
-const BALANZA  = { x: 350, ancho: 220, platoY: 404 };
-const PROBETA  = { x: 615, fondo: 484, tope: 224, borde: 190 };  // tope = raya de la capacidad
-const BOTON_ON   = { x: 416, y: 450, r: 9 };
-const BOTON_TARA = { x: 441, y: 450, r: 9 };
-const LUPA_AUMENTO = 3.2;
+const BALANZA  = { x: 350, ancho: 220, platoY: MESA_Y - 96 };
+const PROBETA  = { x: 615, fondo: MESA_Y - 16, tope: MESA_Y - 276, borde: MESA_Y - 310 };  // tope = raya de la capacidad
+const BOTON_ON   = { x: 416, y: MESA_Y - 50, r: 9 };
+const BOTON_TARA = { x: 441, y: MESA_Y - 50, r: 9 };
+const BOTON_VACIAR = { x: PROBETA.x, y: MESA_Y - 7 };   // en el pie de la probeta
 const FRASCO_REPOSO = { x: 845, y: MESA_Y };   // base del frasco lavador
 const PICO = { x: -60, y: -126 };              // punta del pico, respecto a la base del frasco
 // Volumen dibujado: 1 mL de la probeta ocupa en el lienzo un cilindro de 48 px de
@@ -144,8 +144,27 @@ function dibujarEscena() {
     dibujarCharcos();
     dibujarProbeta();
     dibujarFrasco();
-    if (!muestraEnTubo()) dibujarMuestra(pos.x, pos.y);
+    if (tumbada()) {
+        // En la bandeja descansa tumbada; al cogerla se pone vertical
+        const c = centroTumbada();
+        push();
+        translate(c.x, c.y);
+        rotate(HALF_PI);
+        dibujarMuestra(0, 0);
+        pop();
+    } else if (!muestraEnTubo()) {
+        dibujarMuestra(pos.x, pos.y);
+    }
     dibujarGotas();
+}
+
+// La muestra está quieta en la bandeja: se dibuja tumbada
+function tumbada() {
+    return lugar === 'bandeja' && !mov;
+}
+
+function centroTumbada() {
+    return { x: BANDEJA.x, y: MESA_Y - 14 - tamano.w / 2 };
 }
 
 // La muestra está dentro de la probeta (o entrando o saliendo por la boca)
@@ -269,6 +288,10 @@ function mover(destino) {
         decir(i18n.t('La muestra no cabe por la boca de esta probeta. Elige una más ancha.'));
         return;
     }
+    if (destino === 'probeta' && agua <= 0) {
+        decir(i18n.t('La probeta está vacía: primero hay que echarle agua con el frasco lavador.'));
+        return;
+    }
     const a = { x: pos.x, y: pos.y };
     const b = anclaje(destino);
     const alto = Math.min(a.y, b.y, PROBETA.borde - tamano.h / 2 - 14);
@@ -288,6 +311,10 @@ function soltar(destino, origen) {
     if (destino === 'probeta' && !cabeEnProbeta()) {
         decir(i18n.t('La muestra no cabe por la boca de esta probeta. Elige una más ancha.'));
         destino = origen === 'probeta' ? 'bandeja' : origen;
+    }
+    if (destino === 'probeta' && agua <= 0 && origen !== 'probeta') {
+        decir(i18n.t('La probeta está vacía: primero hay que echarle agua con el frasco lavador.'));
+        destino = origen === 'mano' ? 'bandeja' : origen;
     }
     const a = { x: pos.x, y: pos.y };
     const b = anclaje(destino);
@@ -504,6 +531,7 @@ function limitarFrasco(x, y) {
 function avanzarFrasco() {
     if (arrastre && arrastre.que === 'frasco') {
         const sobre = picoSobreBoca();
+        if (sobre) arrastre.sobreBoca = true;
         if (sobre && !puedeVerter()) {
             decirVertido(i18n.t('Ahora no hace falta echar agua. {i}', { i: i18n.t(INDICACIONES[pasoActual() - 1]) }));
             vertiendo = false;
@@ -557,7 +585,7 @@ function alTerminarDeVerter() {
     if (nivel === 'guiada' && pasoActual() <= 4 && agua > 0) {
         const p = PROBETAS[capProbeta];
         if (agua + muestra.vol > p.cap - 1) {
-            decir(i18n.t('Hay demasiada agua: al meter la muestra, el agua pasaría de la última raya. Pulsa «Vaciar la probeta» y vuelve a llenarla hasta unos 50 mL.'), 'aviso');
+            decir(i18n.t('Hay demasiada agua: al meter la muestra, el agua pasaría de la última raya. Pulsa VACIAR, en el pie de la probeta, y vuelve a llenarla hasta unos 50 mL.'), 'aviso');
         } else if (agua < aguaMinima()) {
             decir(i18n.t('Echa un poco más de agua: con tan poca, la muestra no quedaría cubierta del todo.'));
         }
@@ -574,11 +602,19 @@ function verterConTeclado() {
     }
     const p = PROBETAS[capProbeta];
     frascoPos = limitarFrasco(PROBETA.x - PICO.x, PROBETA.borde - 20 - PICO.y);
-    porVerter += p.cap * 0.05;
+    porVerter += p.cap * 0.1;
 }
 
 function vaciarProbeta() {
-    if (mov || arrastre || bloqueado || muestraEnTubo() || lugar === 'probeta') return;
+    if (mov || arrastre || bloqueado) return;
+    if (muestraEnTubo() || lugar === 'probeta') {
+        decir(i18n.t('Antes de vaciar la probeta, saca la muestra.'));
+        return;
+    }
+    if (agua <= 0) {
+        decir(i18n.t('La probeta ya está vacía.'));
+        return;
+    }
     agua = 0;
     derramado = false;
     porVerter = 0;
@@ -864,13 +900,9 @@ function actualizarInterfaz() {
     bPro.textContent = lugar === 'probeta' ? i18n.t('← Sacar de la probeta') : i18n.t('→ Meter en la probeta');
 
     // ON y TARA nunca se desactivan: si no toca pulsarlos, dicen por qué
-    if (guiada) {
-        bBal.disabled = !quieta || !((paso === 2 && lugar === 'bandeja') || lugar === 'balanza');
-        bPro.disabled = !quieta || !((paso === 5 && lugar !== 'probeta') || lugar === 'probeta');
-    } else {
-        bBal.disabled = !quieta;
-        bPro.disabled = !quieta;
-    }
+    // Tampoco se desactivan los de mover la muestra: si no toca, dicen por qué
+    bBal.disabled = !quieta;
+    bPro.disabled = !quieta;
     document.getElementById('btn-vaciar').disabled = !quieta || lugar === 'probeta' || muestraEnTubo() || agua <= 0;
 
     // Pasos
@@ -1114,10 +1146,18 @@ function dibujarProbeta() {
     const w = p.ancho;
     const x0 = PROBETA.x - w / 2, x1 = PROBETA.x + w / 2;
 
-    // Pie
+    // Pie, con el botón para vaciarla
     noStroke();
     fill(TH.vidrioPie);
     rect(PROBETA.x - w / 2 - 26, MESA_Y - 14, w + 52, 14, 3);
+    fill(TH.botonTara);
+    rect(BOTON_VACIAR.x - 26, BOTON_VACIAR.y - 6, 52, 12, 6);
+    fill(TH.contraste ? 0 : 255);
+    textSize(8.5);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text(i18n.t('VACIAR'), BOTON_VACIAR.x, BOTON_VACIAR.y);
+    textStyle(NORMAL);
 
     // Interior
     fill(TH.vidrioFondo);
@@ -1136,6 +1176,7 @@ function dibujarProbeta() {
     bezier(x0 + 1, yAgua - 3, x0 + w * 0.3, yAgua + 1.5, x1 - w * 0.3, yAgua + 1.5, x1 - 1, yAgua - 3);
 
     // Rayas
+    const largoEtiqueta = Math.min(w * 0.5, 24);
     const nDiv = Math.round(p.cap / p.div);
     for (let i = 1; i <= nDiv; i++) {
         const ml = i * p.div;
@@ -1143,22 +1184,24 @@ function dibujarProbeta() {
         const etiqueta = ml % p.etiqueta === 0;
         const medio = ml % p.medio === 0;
         stroke(TH.raya);
-        strokeWeight(etiqueta ? 1.3 : 0.8);
-        line(x0, y, x0 + (etiqueta ? w * 0.5 : medio ? w * 0.36 : w * 0.2), y);
+        // Las rayas pequeñas de la probeta de 250 mL, más finas para que no formen una mancha
+        strokeWeight(etiqueta ? 1.3 : medio ? 0.8 : (p.div > 1 ? 0.45 : 0.8));
+        // Largo de las rayas como en la de 100 mL, también en la ancha de 250 mL: así caben en la lupa
+        line(x0, y, x0 + (etiqueta ? largoEtiqueta : medio ? Math.min(w * 0.36, 17) : Math.min(w * 0.2, 10)), y);
         // Los números van impresos en el vidrio, junto a la raya larga (así se ven en la lupa)
         if (etiqueta) {
             noStroke();
             fill(TH.raya);
             textSize(9);
             textAlign(LEFT, CENTER);
-            text(String(ml), x0 + w * 0.5 + 2, y);
+            text(String(ml), x0 + largoEtiqueta + 2, y);
         }
     }
     noStroke();
     fill(TH.raya);
     textSize(9);
     textAlign(LEFT, CENTER);
-    text('mL', x0 + w * 0.5 + 2, PROBETA.tope - 18);
+    text('mL', x0 + largoEtiqueta + 2, PROBETA.tope - 18);
 
     // Vidrio
     noFill();
@@ -1227,16 +1270,11 @@ function dibujarGotas() {
     gotas.forEach(g => circle(g.x, g.y, 3.8));
 }
 
+// Todas las muestras están pintadas del mismo color mate: así el aspecto no delata
+// el material y hay que medir. Solo cambia un poco el tono de una a otra.
 function colorMuestra() {
     const t = muestra.tinte;
-    switch (muestra.mat.aspecto) {
-        case 'plastico-claro': return { base: [226 + t / 3, 220 + t / 3, 204], borde: [150, 144, 128], brillo: 90 };
-        case 'plastico-gris':  return { base: [112 + t, 118 + t, 128 + t], borde: [70, 74, 82], brillo: 40 };
-        case 'vidrio':         return { base: [150, 205 + t / 2, 195], borde: [90, 140, 132], brillo: 160, alfa: 175 };
-        case 'dorado':         return { base: [204 + t / 2, 168 + t / 2, 88], borde: [130, 100, 40], brillo: 150 };
-        case 'cobrizo':        return { base: [192 + t / 2, 110, 70], borde: [120, 62, 34], brillo: 130 };
-        default:               return { base: [172 + t, 178 + t, 190 + t], borde: [96, 102, 114], brillo: 170 };
-    }
+    return { base: [186 + t / 2, 156 + t / 2, 112 + t / 3], borde: [112, 90, 58], brillo: 70 };
 }
 
 function dibujarMuestra(cx, cy) {
@@ -1245,7 +1283,7 @@ function dibujarMuestra(cx, cy) {
     // Sombra (solo sobre la mesa o el plato)
     noStroke();
     // Cuerpo
-    fill(c.base[0], c.base[1], c.base[2], c.alfa || 255);
+    fill(c.base[0], c.base[1], c.base[2]);
     stroke(TH.contraste ? TH.contornoMuestra : color(...c.borde));
     strokeWeight(TH.contraste ? 2 : 1.2);
     beginShape();
@@ -1274,13 +1312,18 @@ function dibujarMuestra(cx, cy) {
     }
 }
 
+// Con la probeta de 250 mL las rayas están muy juntas: la lupa aumenta más
+function aumentoLupa() {
+    return capProbeta === 250 ? 4 : 3.2;
+}
+
 function radioLupa() {
     return escala < 0.62 ? 115 : 82;     // en pantallas pequeñas, más grande
 }
 
 // Donde espera la lupa hasta que se arrastra: a la derecha, sin tapar la probeta ni el frasco
 function lupaReposo() {
-    return escala < 0.62 ? { x: 772, y: 262 } : { x: 770, y: 270 };
+    return escala < 0.62 ? { x: 772, y: 282 } : { x: 770, y: 290 };
 }
 
 // Lupa de verdad: amplía lo que tiene debajo. Se lleva a la probeta para leer el menisco.
@@ -1305,7 +1348,7 @@ function dibujarLupa() {
     rect(x - r, y - r, 2 * r, 2 * r);
     push();
     translate(x, y);
-    scale(LUPA_AUMENTO);
+    scale(aumentoLupa());
     translate(-x, -y);
     dibujarEscena();
     pop();
@@ -1333,8 +1376,10 @@ function dibujarLupa() {
     circle(ex, y, 6);
 }
 
+// La lupa se centra sobre las rayas y los números, junto a la pared izquierda
 function llevarLupaAlAgua() {
-    lupaPos = { x: PROBETA.x, y: yDeMl(nivelObjetivo()) };
+    const p = PROBETAS[capProbeta];
+    lupaPos = { x: PROBETA.x - p.ancho / 2 + 22, y: yDeMl(nivelObjetivo()) };
 }
 
 function dibujarRotulos() {
@@ -1374,6 +1419,10 @@ function puntoLienzo(e, cv) {
 
 function sobreMuestra(q) {
     const m = 6;
+    if (tumbada()) {
+        const c = centroTumbada();
+        return Math.abs(q.x - c.x) < tamano.h / 2 + m && Math.abs(q.y - c.y) < tamano.w / 2 + m;
+    }
     return Math.abs(q.x - pos.x) < tamano.w / 2 + m && Math.abs(q.y - pos.y) < tamano.h / 2 + m;
 }
 
@@ -1395,6 +1444,12 @@ function sobreBoton(q, b) {
     return d < alcance && d <= dist(q.x, q.y, otro.x, otro.y);
 }
 
+// Botón «vaciar» del pie de la probeta (en pantallas pequeñas responde en una zona mayor)
+function sobreVaciar(q) {
+    const extra = Math.max(4, 12 / escala - 8);
+    return Math.abs(q.x - BOTON_VACIAR.x) < 26 + extra && Math.abs(q.y - BOTON_VACIAR.y) < 7 + extra;
+}
+
 function sobreFrasco(q) {
     const { x, y } = frascoPos;
     const enCuerpo = q.x > x - 26 && q.x < x + 26 && q.y > y - 108 && q.y < y + 2;
@@ -1410,6 +1465,7 @@ function setupPuntero(cv) {
         const q = puntoLienzo(e, cv);
         if (sobreBoton(q, BOTON_ON)) { pulsarOn(); return; }
         if (sobreBoton(q, BOTON_TARA)) { pulsarTara(); return; }
+        if (sobreVaciar(q)) { vaciarProbeta(); return; }
         if (mov) return;
         // La lupa va por encima de todo: se coge primero
         if (sobreLupa(q)) {
@@ -1454,7 +1510,13 @@ function setupPuntero(cv) {
         if (a.que === 'frasco') {
             vertiendo = false;
             if (a.vertido) alTerminarDeVerter();
-            else avisoVertido = '';
+            else {
+                avisoVertido = '';
+                // Cerca de la probeta pero sin acertar con el pico
+                if (!a.sobreBoca && dist(frascoPos.x + PICO.x, frascoPos.y + PICO.y, PROBETA.x, PROBETA.borde) < 110) {
+                    decir(i18n.t('Para echar agua, pon el pico del frasco justo encima de la boca de la probeta.'));
+                }
+            }
         }
     };
     cv.addEventListener('pointerup', terminar);
@@ -1482,7 +1544,7 @@ function moverMuestraA(x, y) {
     if (muestraEnTubo()) {
         if (y + h / 2 > PROBETA.borde) x = PROBETA.x;
     } else if (Math.abs(x - PROBETA.x) < p.ancho / 2 + w / 2 + 4 && y + h / 2 > PROBETA.borde) {
-        const entra = Math.abs(x - PROBETA.x) < p.ancho / 2 && cabeEnProbeta()
+        const entra = Math.abs(x - PROBETA.x) < p.ancho / 2 && cabeEnProbeta() && agua > 0
             && pos.y + h / 2 <= PROBETA.borde + 2
             && (nivel !== 'guiada' || pasoActual() === 5 || arrastre.origen === 'probeta');
         if (entra) x = PROBETA.x;
@@ -1512,7 +1574,7 @@ function actualizarCursor() {
     if (arrastre) c = 'grabbing';
     else {
         const q = { x: mouseX, y: mouseY };
-        if (sobreBoton(q, BOTON_ON) || sobreBoton(q, BOTON_TARA)) c = 'pointer';
+        if (sobreBoton(q, BOTON_ON) || sobreBoton(q, BOTON_TARA) || sobreVaciar(q)) c = 'pointer';
         else if (sobreLupa(q) || (!mov && sobreMuestra(q)) || sobreFrasco(q)) c = 'grab';
     }
     if (cv.style.cursor !== c) cv.style.cursor = c;
