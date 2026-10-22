@@ -808,7 +808,7 @@ function dibujarProbeta() {
     rect(x0, PROBETA.borde, w, PROBETA.fondo - PROBETA.borde);
 
     // Muestra sumergida (detrás del agua)
-    if (lugar === 'probeta' && !mov) dibujarMuestra(pos.x, pos.y);
+    if (muestraEnTubo()) dibujarMuestra(pos.x, pos.y);
 
     // Agua
     const yAgua = yDeMl(nivelMostrado);
@@ -970,7 +970,7 @@ function dibujarRotulos() {
     textSize(tamTexto(15));
     textAlign(LEFT, TOP);
     const duracion = mensajeTipo === 'aviso' ? DURACION_AVISO * 2 : DURACION_AVISO;
-    const aviso = millis() - mensajeT < duracion && !mov;
+    const aviso = millis() - mensajeT < duracion && !mov && !arrastre;
     if (aviso && mensajeTipo === 'aviso') fill(TH.aviso);
     text(aviso ? mensaje : indicacion(), 20, 16, width - 40, 80);
     fill(TH.acento);
