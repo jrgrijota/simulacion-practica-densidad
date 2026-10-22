@@ -12,8 +12,10 @@ const MESA_Y   = 500;                 // borde superior de la mesa
 const BANDEJA  = { x: 120, ancho: 140 };
 const BALANZA  = { x: 350, ancho: 220, platoY: 404 };
 const PROBETA  = { x: 615, fondo: 484, tope: 130, borde: 92 };   // tope = raya de la capacidad
-const LUPA_ANCHA = { x: 790, y: 250, r: 100 };   // a la derecha de la probeta
-const LUPA_MOVIL = { x: 310, y: 268, r: 125 };   // en pantallas pequeñas, más grande y sobre la balanza
+const BOTON_ON   = { x: 416, y: 450, r: 9 };
+const BOTON_TARA = { x: 441, y: 450, r: 9 };
+const LUPA_REPOSO = { x: 800, y: 300 };  // donde espera la lupa hasta que se arrastra
+const LUPA_AUMENTO = 3.2;
 const REBOSE   = 1.12;                // la probeta admite un 12 % más por encima de la última raya
 const DURACION_MOV = 1.1;             // s que tarda la muestra en ir de un sitio a otro
 
@@ -28,11 +30,11 @@ const PASOS = [
 ];
 
 const INDICACIONES = [
-    'Paso 1: enciende la balanza y pulsa «Tarar» para ponerla a cero.',
-    'Paso 2: pon la muestra en la balanza y apunta la masa en el cuaderno.',
-    'Paso 3: abre la lupa, lee el volumen de agua y apúntalo.',
-    'Paso 4: mete la muestra en la probeta.',
-    'Paso 5: lee el nuevo volumen y apúntalo.',
+    'Paso 1: enciende la balanza con su botón ON y pulsa TARA para ponerla a cero.',
+    'Paso 2: arrastra la muestra al plato de la balanza y apunta la masa en el cuaderno.',
+    'Paso 3: lleva la lupa al agua de la probeta, lee el volumen y apúntalo.',
+    'Paso 4: arrastra la muestra hasta la boca de la probeta y suéltala.',
+    'Paso 5: lee con la lupa el nuevo volumen y apúntalo.',
     'Paso 6: calcula el volumen de la muestra y su densidad.',
     'Paso 7: busca en la tabla el material con la densidad más parecida.',
 ];
@@ -44,7 +46,7 @@ let capProbeta = 100;
 let forma = [];                // polígono de la muestra (unidades relativas)
 let tamano = { w: 40, h: 60 };
 
-let lugar = 'bandeja';         // 'bandeja' | 'balanza' | 'probeta'
+let lugar = 'bandeja';         // 'bandeja' | 'balanza' | 'probeta' | 'mano' | 'moviendo'
 let mov = null;                // { ruta: [[x,y]…], t, destino }
 let pos = { x: 0, y: 0 };      // centro de la muestra
 
@@ -56,7 +58,9 @@ let taradaVacia = false;
 let agua = 0;                  // mL de agua en la probeta (baja si se derrama)
 let nivelMostrado = 0;         // mL que marca el agua (se anima)
 let derramado = false;
-let lupa = false;
+let lupaPos = { ...LUPA_REPOSO };
+let arrastre = null;           // { que: 'muestra' | 'lupa', dx, dy, origen }
+let avisoFuera = false;        // se soltó la muestra fuera de su sitio
 
 let datos = {};                // valores del cuaderno (números)
 let correctos = {};            // qué datos del cuaderno están bien
@@ -65,6 +69,7 @@ let terminado = false;
 
 let mensaje = '';              // aviso de lo último que ha pasado
 let mensajeT = -1e9;           // cuándo se dio (ms)
+let mensajeTipo = '';          // 'aviso' para los avisos de seguridad (más tiempo y en otro color)
 let ultimoPaso = 0;
 const DURACION_AVISO = 6000;   // ms que se ve un aviso antes de volver a la indicación
 let TH = {};
@@ -76,8 +81,10 @@ let escala = 1;                // px de pantalla por px del lienzo (lo calcula f
 function setup() {
     const canvas = createCanvas(CV_W, CV_H);
     canvas.parent('canvas-container');
-    canvas.elt.setAttribute('role', 'img');
-    canvas.elt.setAttribute('aria-label', i18n.t('Mesa de laboratorio con una bandeja, una balanza electrónica y una probeta con agua. Los mensajes de la simulación se leen en voz alta.'));
+    canvas.elt.setAttribute('role', 'application');
+    canvas.elt.setAttribute('tabindex', '0');
+    canvas.elt.setAttribute('aria-label', i18n.t('Mesa de laboratorio con una bandeja, una balanza electrónica, una probeta con agua y una lupa. Con el ratón o el dedo se arrastran la muestra y la lupa. Con el teclado, las flechas mueven la lupa. Los mensajes de la simulación se leen en voz alta.'));
+    setupPuntero(canvas.elt);
     fitCanvas();
     frameRate(60);
     textFont('monospace');
@@ -97,14 +104,24 @@ function draw() {
     avanzarAgua();
 
     background(TH.fondo);
+    dibujarEscena();
+    dibujarLupa();
+    dibujarRotulos();
+    actualizarCursor();
+}
+
+function dibujarEscena() {
     dibujarCuadricula();
     dibujarMesa();
     dibujarBandeja();
     dibujarBalanza();
     dibujarProbeta();
-    if (lugar !== 'probeta' || mov) dibujarMuestra(pos.x, pos.y);
-    if (lupa) dibujarLupa();
-    dibujarRotulos();
+    if (!muestraEnTubo()) dibujarMuestra(pos.x, pos.y);
+}
+
+// La muestra está dentro de la probeta (o entrando o saliendo por la boca)
+function muestraEnTubo() {
+    return Math.abs(pos.x - PROBETA.x) < 0.5 && pos.y + tamano.h / 2 > PROBETA.borde;
 }
 
 // ============================================================
@@ -147,7 +164,9 @@ function elegirMuestra(n) {
 function reiniciar() {
     lugar = 'bandeja';
     mov = null;
+    arrastre = null;
     pos = anclaje('bandeja');
+    lupaPos = { ...LUPA_REPOSO };
     balanzaEncendida = false;
     deriva = (2 + Math.floor(Math.random() * 4)) / 10;
     tara = 0;
@@ -186,14 +205,17 @@ function anclaje(sitio) {
 // ============================================================
 //  Movimientos de la muestra
 // ============================================================
+function cabeEnProbeta() {
+    return tamano.w <= PROBETAS[capProbeta].ancho * 0.88;
+}
+
+// Con los botones del teclado: la muestra sube, va por encima y baja
 function mover(destino) {
-    if (mov) return;
-    if (destino === 'probeta') {
-        const p = PROBETAS[capProbeta];
-        if (tamano.w > p.ancho * 0.88) {
-            decir(i18n.t('La muestra no cabe por la boca de esta probeta. Elige una más ancha.'));
-            return;
-        }
+    if (mov || arrastre) return;
+    if (!permitido(destino, lugar)) return;
+    if (destino === 'probeta' && !cabeEnProbeta()) {
+        decir(i18n.t('La muestra no cabe por la boca de esta probeta. Elige una más ancha.'));
+        return;
     }
     const a = { x: pos.x, y: pos.y };
     const b = anclaje(destino);
@@ -203,9 +225,54 @@ function mover(destino) {
     actualizarInterfaz();
 }
 
+// Al soltar la muestra que se arrastra: va al sitio más cercano por el camino corto
+function soltar(destino, origen) {
+    if (destino === 'fuera') {
+        destino = 'bandeja';
+        avisoFuera = true;
+    }
+    if (!permitido(destino, origen)) destino = origen === 'mano' ? 'bandeja' : origen;
+    if (destino === 'probeta' && !cabeEnProbeta()) {
+        decir(i18n.t('La muestra no cabe por la boca de esta probeta. Elige una más ancha.'));
+        destino = origen === 'probeta' ? 'bandeja' : origen;
+    }
+    const a = { x: pos.x, y: pos.y };
+    const b = anclaje(destino);
+    let ruta;
+    if (destino === 'probeta') {
+        const boca = PROBETA.borde - tamano.h / 2 - 4;
+        ruta = muestraEnTubo() ? [[a.x, a.y], [b.x, b.y]] : [[a.x, a.y], [b.x, Math.min(a.y, boca)], [b.x, b.y]];
+    } else if (muestraEnTubo()) {
+        const fuera = PROBETA.borde - tamano.h / 2 - 14;
+        ruta = [[a.x, a.y], [a.x, fuera], [b.x, Math.min(fuera, b.y)], [b.x, b.y]];
+    } else {
+        ruta = [[a.x, a.y], [b.x, b.y]];
+    }
+    mov = { ruta, t: 0, destino, origen, lento: destino === 'probeta' };
+    lugar = 'moviendo';
+    actualizarInterfaz();
+}
+
+// En el nivel guiado no se puede saltar un paso
+function permitido(destino, origen) {
+    if (nivel !== 'guiada') return true;
+    const paso = pasoActual();
+    if (destino === 'balanza') {
+        if (paso === 2 || origen === 'balanza') return true;
+        decir(paso === 1 ? i18n.t('Antes de pesar, enciende la balanza y pulsa TARA.') : i18n.t(INDICACIONES[paso - 1]));
+        return false;
+    }
+    if (destino === 'probeta') {
+        if (paso === 4 || origen === 'probeta') return true;
+        decir(paso < 4 ? i18n.t('Todavía no: antes de meter la muestra tienes que pesarla y leer el volumen inicial del agua.') : i18n.t(INDICACIONES[paso - 1]));
+        return false;
+    }
+    return true;
+}
+
 function avanzarMovimiento() {
     if (!mov) return;
-    mov.t = Math.min(1, mov.t + deltaTime / 1000 / DURACION_MOV);
+    mov.t = Math.min(1, mov.t + deltaTime / 1000 / (mov.lento ? DURACION_MOV * 1.4 : DURACION_MOV * 0.7));
     const r = mov.ruta;
     const largos = [];
     let total = 0;
@@ -236,9 +303,10 @@ function avanzarMovimiento() {
 }
 
 function alLlegar(destino, origen) {
-    if (origen === 'probeta') {
+    if (origen === 'probeta' && destino !== 'probeta') {
         derramado = false;
     }
+    if (destino === origen && !avisoFuera) { actualizarInterfaz(); return; }
     if (destino === 'balanza') {
         decir(balanzaEncendida
             ? i18n.t('La balanza marca {m} g.', { m: lecturaBalanzaTexto() })
@@ -246,25 +314,29 @@ function alLlegar(destino, origen) {
     } else if (destino === 'probeta') {
         const p = PROBETAS[capProbeta];
         const maximo = p.cap * REBOSE;
-        if (agua + muestra.vol > maximo) {
+        if (derramado) {
+            // Ya se había derramado: no se pierde más agua
+        } else if (agua + muestra.vol > maximo) {
             agua = maximo - muestra.vol;
             derramado = true;
             decir(i18n.t('¡Se ha salido agua por arriba! Esta medida no vale: usa una probeta más grande.'));
         } else {
             decir(i18n.t('La muestra está sumergida: el agua ha subido.'));
         }
+    } else if (avisoFuera) {
+        decir(i18n.t('⚠ En el laboratorio, las muestras solo se dejan en la bandeja, en el plato de la balanza o dentro de la probeta, nunca sobre la mesa. La muestra ha vuelto a la bandeja.'), 'aviso');
     } else {
         decir(i18n.t('La muestra está en la bandeja.'));
     }
+    avisoFuera = false;
     actualizarInterfaz();
 }
 
 // Volumen sumergido de la muestra (cm³) según dónde esté ahora
 function volumenSumergido() {
     if (lugar === 'probeta') return muestra.vol;
-    if (!mov) return 0;
-    // Durante el movimiento: parte de la muestra que está por debajo del agua
-    if (Math.abs(pos.x - PROBETA.x) > 2) return 0;
+    if (!muestraEnTubo()) return 0;
+    // Entrando o saliendo: parte de la muestra que está por debajo del agua
     const superficie = yDeMl(Math.min(agua, PROBETAS[capProbeta].cap * REBOSE));
     const abajo = pos.y + tamano.h / 2;
     const f = constrain((abajo - superficie) / tamano.h, 0, 1);
@@ -392,7 +464,7 @@ function comprobarDato(id) {
         ok = Math.abs(x - real) <= margenV;
         pista = Math.abs(x - real) <= 3 * p.div
             ? i18n.t('Casi. Fíjate en la parte de abajo del menisco y cuenta las rayitas desde la raya con número.')
-            : i18n.t('Revisa la lectura. Abre la lupa con «Ampliar la escala» para ver bien las rayas.');
+            : i18n.t('Revisa la lectura. Lleva la lupa al agua para ver bien las rayas.');
     } else if (id === 'v') {
         const esperado = datos.vf - datos.vi;
         ok = Math.abs(x - esperado) <= 0.05 + 1e-9;
@@ -477,7 +549,7 @@ function setNivel(n) {
 function actualizarInterfaz() {
     const guiada = nivel === 'guiada';
     const paso = pasoActual();
-    const quieta = !mov;
+    const quieta = !mov && !arrastre;
 
     const bEnc = document.getElementById('btn-encender');
     const bTar = document.getElementById('btn-tarar');
@@ -491,8 +563,8 @@ function actualizarInterfaz() {
     if (guiada) {
         bEnc.disabled = !(paso === 1 && !balanzaEncendida);
         bTar.disabled = !(paso === 1 && balanzaEncendida);
-        bBal.disabled = !quieta || !((paso === 2 && lugar === 'bandeja') || (lugar === 'balanza' && paso >= 3 && paso !== 4));
-        bPro.disabled = !quieta || !((paso === 4 && lugar !== 'probeta') || (lugar === 'probeta' && paso >= 6));
+        bBal.disabled = !quieta || !((paso === 2 && lugar === 'bandeja') || lugar === 'balanza');
+        bPro.disabled = !quieta || !((paso === 4 && lugar !== 'probeta') || lugar === 'probeta');
     } else {
         bEnc.disabled = false;
         bTar.disabled = !balanzaEncendida;
@@ -559,8 +631,9 @@ function indicacion() {
 }
 
 // Aviso de lo que acaba de pasar: se ve en el lienzo y lo lee el lector de pantalla
-function decir(txt) {
+function decir(txt, tipo) {
     mensaje = txt;
+    mensajeTipo = tipo || '';
     mensajeT = millis();
     anunciar(txt);
 }
@@ -619,10 +692,10 @@ function setupControles() {
     document.getElementById('btn-tarar').addEventListener('click', tarar);
     document.getElementById('btn-balanza').addEventListener('click', () => mover(lugar === 'balanza' ? 'bandeja' : 'balanza'));
     document.getElementById('btn-probeta').addEventListener('click', () => mover(lugar === 'probeta' ? 'bandeja' : 'probeta'));
-    const bLupa = document.getElementById('btn-lupa');
-    bLupa.addEventListener('click', () => {
-        lupa = !lupa;
-        bLupa.setAttribute('aria-pressed', String(lupa));
+    document.getElementById('btn-lupa').addEventListener('click', () => {
+        llevarLupaAlAgua();
+        decir(i18n.t('La lupa está sobre el agua. Muévela con las flechas si quieres ver otra parte de la escala.'));
+        document.querySelector('#canvas-container canvas').focus();
     });
     document.getElementById('btn-describir').addEventListener('click', describirEscala);
     document.getElementById('btn-reiniciar').addEventListener('click', reiniciar);
@@ -697,17 +770,22 @@ function dibujarBalanza() {
     textAlign(LEFT, CENTER);
     text('g', px + 124, py + 21);
     textStyle(NORMAL);
-    // Botones dibujados
-    const bx = x0 + BALANZA.ancho - 46;
+    // Botones de la balanza (se pulsan con el ratón o el dedo)
+    const on = BOTON_ON, ta = BOTON_TARA;
+    stroke(TH.balanzaBorde);
+    strokeWeight(1.2);
     fill(balanzaEncendida ? TH.ledOn : TH.ledOff);
-    circle(bx, py + 14, 13);
+    circle(on.x, on.y, 2 * on.r);
     fill(TH.botonTara);
-    circle(bx + 22, py + 14, 13);
+    circle(ta.x, ta.y, 2 * ta.r);
+    noStroke();
     fill(TH.balanzaRotulo);
     textSize(9);
+    textStyle(BOLD);
     textAlign(CENTER, TOP);
-    text('ON', bx, py + 25);
-    text(i18n.t('TARA'), bx + 22, py + 25);
+    text('ON', on.x, on.y + on.r + 3);
+    text(i18n.t('TARA'), ta.x, ta.y + ta.r + 3);
+    textStyle(NORMAL);
     // Rótulo
     fill(TH.textoTenue);
     textSize(13);
@@ -751,19 +829,20 @@ function dibujarProbeta() {
         stroke(TH.raya);
         strokeWeight(etiqueta ? 1.3 : 0.8);
         line(x0, y, x0 + (etiqueta ? w * 0.5 : medio ? w * 0.36 : w * 0.2), y);
+        // Los números van impresos en el vidrio, junto a la raya larga (así se ven en la lupa)
         if (etiqueta) {
             noStroke();
             fill(TH.raya);
-            textSize(11);
+            textSize(9);
             textAlign(LEFT, CENTER);
-            text(String(ml), x1 + 6, y);
+            text(String(ml), x0 + w * 0.5 + 2, y);
         }
     }
     noStroke();
     fill(TH.raya);
-    textSize(11);
+    textSize(9);
     textAlign(LEFT, CENTER);
-    text('mL', x1 + 6, PROBETA.tope - 22);
+    text('mL', x0 + w * 0.5 + 2, PROBETA.tope - 18);
 
     // Vidrio
     noFill();
@@ -827,26 +906,23 @@ function dibujarMuestra(cx, cy) {
     noStroke();
 }
 
+function radioLupa() {
+    return escala < 0.62 ? 115 : 82;     // en pantallas pequeñas, más grande
+}
+
+// Lupa de verdad: amplía lo que tiene debajo. Se lleva a la probeta para leer el menisco.
 function dibujarLupa() {
-    const p = PROBETAS[capProbeta];
-    const ml = nivelMostrado;
-    const yReal = yDeMl(ml);
-    const { x, y, r } = escala < 0.62 ? LUPA_MOVIL : LUPA_ANCHA;
-    const k = (r * 0.18) / p.div;    // px por mL dentro de la lupa
-    const pared = x - r * 0.62;      // pared de la probeta, de la que salen las rayas
-    const yL = ml2lupa => y - (ml2lupa - ml) * k;
+    const { x, y } = lupaPos;
+    const r = radioLupa();
 
-    // Círculo sobre la probeta y unión
-    noFill();
-    stroke(TH.acento);
-    strokeWeight(1.4);
-    circle(PROBETA.x, yReal, p.ancho + 14);
-    drawingContext.setLineDash([4, 3]);
-    const dx = x > PROBETA.x ? -r : r;
-    line(PROBETA.x + (x > PROBETA.x ? 1 : -1) * (p.ancho / 2 + 7), yReal, x + dx, y);
-    drawingContext.setLineDash([]);
+    // Mango
+    stroke(TH.mango);
+    strokeWeight(12);
+    strokeCap(ROUND);
+    line(x + r * 0.72, y + r * 0.72, x + r * 1.25, y + r * 1.25);
+    strokeCap(SQUARE);
 
-    // Interior
+    // Interior: la escena ampliada alrededor del centro de la lupa
     drawingContext.save();
     drawingContext.beginPath();
     drawingContext.arc(x, y, r, 0, TWO_PI);
@@ -854,63 +930,13 @@ function dibujarLupa() {
     noStroke();
     fill(TH.fondo);
     rect(x - r, y - r, 2 * r, 2 * r);
-    fill(TH.vidrioFondo);
-    rect(x - r, y - r, 2 * r, 2 * r);
-    fill(TH.fondo);
-    rect(x - r, y - r, pared - (x - r), 2 * r);
-    rect(x - r, y - r, 2 * r, 2 * r);
-
-    // Agua con menisco (bordes más altos que el centro)
-    const alzado = 0.55 * r * 0.18;
-    fill(TH.agua);
-    beginShape();
-    for (let i = 0; i <= 30; i++) {
-        const xx = x - r + (2 * r * i) / 30;
-        const u = (xx - x) / r;
-        vertex(xx, y - alzado * u * u);
-    }
-    vertex(x + r, y + r);
-    vertex(x - r, y + r);
-    endShape(CLOSE);
-    noFill();
-    stroke(TH.aguaBorde);
-    strokeWeight(2.2);
-    beginShape();
-    for (let i = 0; i <= 30; i++) {
-        const xx = x - r + (2 * r * i) / 30;
-        const u = (xx - x) / r;
-        vertex(xx, y - alzado * u * u);
-    }
-    endShape();
-
-    // Rayas ampliadas
-    const desde = Math.max(p.div, Math.ceil((ml - (r / k)) / p.div) * p.div);
-    const hasta = Math.min(p.cap, Math.floor((ml + (r / k)) / p.div) * p.div);
-    for (let v = desde; v <= hasta + 1e-6; v += p.div) {
-        const yy = yL(v);
-        const vv = Math.round(v * 100) / 100;
-        const etiqueta = vv % p.etiqueta === 0;
-        const medio = vv % p.medio === 0;
-        const largo = r * (etiqueta ? 0.62 : medio ? 0.46 : 0.28);
-        stroke(TH.raya);
-        strokeWeight(etiqueta ? 2.2 : medio ? 1.8 : 1.2);
-        line(pared, yy, pared + largo, yy);
-        if (medio) {
-            noStroke();
-            fill(TH.raya);
-            textSize(r * (etiqueta ? 0.17 : 0.14));
-            textStyle(etiqueta ? BOLD : NORMAL);
-            textAlign(LEFT, CENTER);
-            text(String(vv), pared + r * 0.68, yy);
-            textStyle(NORMAL);
-        }
-    }
-    // Pared de vidrio
-    stroke(TH.vidrio);
-    strokeWeight(3);
-    line(pared, y - r, pared, y + r);
-
-    // Línea de los ojos
+    push();
+    translate(x, y);
+    scale(LUPA_AUMENTO);
+    translate(-x, -y);
+    dibujarEscena();
+    pop();
+    // Línea de los ojos: se pone sobre la parte baja del menisco para leer
     stroke(TH.ojos);
     strokeWeight(1.3);
     drawingContext.setLineDash([5, 4]);
@@ -918,31 +944,24 @@ function dibujarLupa() {
     drawingContext.setLineDash([]);
     drawingContext.restore();
 
-    // Borde, ojo y rótulos
+    // Aro
     noFill();
     stroke(TH.acento);
-    strokeWeight(2.4);
+    strokeWeight(3);
     circle(x, y, 2 * r);
+    // Ojo a la altura de la línea
     stroke(TH.ojos);
-    strokeWeight(1.3);
-    drawingContext.setLineDash([5, 4]);
-    line(x + r, y, x + r + 10, y);
-    drawingContext.setLineDash([]);
-    noFill();
     strokeWeight(1.6);
-    const ex = x + r + 22;
+    const ex = x - r - 18;
     bezier(ex - 10, y, ex - 4, y - 7, ex + 4, y - 7, ex + 10, y);
     bezier(ex - 10, y, ex - 4, y + 7, ex + 4, y + 7, ex + 10, y);
     noStroke();
     fill(TH.ojos);
     circle(ex, y, 6);
-    if (escala < 0.62) return;      // en el móvil no caben los rótulos de la lupa
-    textSize(12);
-    textAlign(CENTER, BOTTOM);
-    text(i18n.t('ojos a la altura del agua'), x, y - r - 8);
-    fill(TH.acento);
-    textAlign(CENTER, TOP);
-    text(i18n.t('escala ampliada'), x, y + r + 8);
+}
+
+function llevarLupaAlAgua() {
+    lupaPos = { x: PROBETA.x, y: yDeMl(nivelObjetivo()) };
 }
 
 function dibujarRotulos() {
@@ -950,7 +969,9 @@ function dibujarRotulos() {
     fill(TH.texto);
     textSize(tamTexto(15));
     textAlign(LEFT, TOP);
-    const aviso = millis() - mensajeT < DURACION_AVISO && !mov;
+    const duracion = mensajeTipo === 'aviso' ? DURACION_AVISO * 2 : DURACION_AVISO;
+    const aviso = millis() - mensajeT < duracion && !mov;
+    if (aviso && mensajeTipo === 'aviso') fill(TH.aviso);
     text(aviso ? mensaje : indicacion(), 20, 16, width - 40, 80);
     fill(TH.acento);
     textSize(tamTexto(13));
@@ -966,6 +987,139 @@ function dibujarRotulos() {
 // En pantallas pequeñas el lienzo se encoge: los textos crecen para seguir leyéndose
 function tamTexto(base) {
     return constrain(base * 0.62 / escala, base, base * 1.9);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RATÓN, DEDO Y TECLADO
+// ═══════════════════════════════════════════════════════════════════
+
+// Punto del lienzo bajo el puntero (el lienzo está escalado con CSS)
+function puntoLienzo(e, cv) {
+    const r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * CV_W / r.width, y: (e.clientY - r.top) * CV_H / r.height };
+}
+
+function sobreMuestra(q) {
+    const m = 6;
+    return Math.abs(q.x - pos.x) < tamano.w / 2 + m && Math.abs(q.y - pos.y) < tamano.h / 2 + m;
+}
+
+function sobreLupa(q) {
+    const r = radioLupa();
+    const enAro = dist(q.x, q.y, lupaPos.x, lupaPos.y) < r;
+    // El mango también sirve para cogerla
+    const t = ((q.x - lupaPos.x) + (q.y - lupaPos.y)) / 2;
+    const enMango = t > r * 0.6 && t < r * 1.35 && Math.abs((q.x - lupaPos.x) - (q.y - lupaPos.y)) < 18;
+    return enAro || enMango;
+}
+
+// Los botones de la balanza son pequeños: en pantallas pequeñas la zona que responde
+// al dedo crece, y si toca a los dos gana el más cercano
+function sobreBoton(q, b) {
+    const alcance = Math.max(b.r + 8, 20 / escala);
+    const otro = b === BOTON_ON ? BOTON_TARA : BOTON_ON;
+    const d = dist(q.x, q.y, b.x, b.y);
+    return d < alcance && d <= dist(q.x, q.y, otro.x, otro.y);
+}
+
+function setupPuntero(cv) {
+    cv.style.touchAction = 'none';
+
+    cv.addEventListener('pointerdown', (e) => {
+        const q = puntoLienzo(e, cv);
+        if (sobreBoton(q, BOTON_ON)) {
+            if (nivel !== 'guiada' || !document.getElementById('btn-encender').disabled) encender();
+            return;
+        }
+        if (sobreBoton(q, BOTON_TARA)) {
+            if (!document.getElementById('btn-tarar').disabled) tarar();
+            return;
+        }
+        if (mov) return;
+        // La lupa va por encima de todo: se coge primero
+        if (sobreLupa(q)) {
+            arrastre = { que: 'lupa', dx: lupaPos.x - q.x, dy: lupaPos.y - q.y };
+        } else if (sobreMuestra(q)) {
+            arrastre = { que: 'muestra', dx: pos.x - q.x, dy: pos.y - q.y, origen: lugar, enTubo: muestraEnTubo() };
+            lugar = 'mano';
+            actualizarInterfaz();
+        } else {
+            return;
+        }
+        cv.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+
+    cv.addEventListener('pointermove', (e) => {
+        if (!arrastre) return;
+        const q = puntoLienzo(e, cv);
+        if (arrastre.que === 'lupa') {
+            lupaPos.x = constrain(q.x + arrastre.dx, 0, CV_W);
+            lupaPos.y = constrain(q.y + arrastre.dy, 0, MESA_Y);
+        } else {
+            moverMuestraA(q.x + arrastre.dx, q.y + arrastre.dy);
+        }
+    });
+
+    const terminar = () => {
+        if (!arrastre) return;
+        const a = arrastre;
+        arrastre = null;
+        if (a.que === 'muestra') soltar(destinoAlSoltar(), a.origen);
+    };
+    cv.addEventListener('pointerup', terminar);
+    cv.addEventListener('pointercancel', terminar);
+
+    // Flechas: mueven la lupa (Mayús para ir más deprisa)
+    cv.addEventListener('keydown', (e) => {
+        const paso = e.shiftKey ? 20 : 4;
+        const d = { ArrowUp: [0, -paso], ArrowDown: [0, paso], ArrowLeft: [-paso, 0], ArrowRight: [paso, 0] }[e.key];
+        if (!d) return;
+        e.preventDefault();
+        lupaPos.x = constrain(lupaPos.x + d[0], 0, CV_W);
+        lupaPos.y = constrain(lupaPos.y + d[1], 0, MESA_Y);
+    });
+}
+
+// La muestra en la mano no atraviesa la mesa, la balanza ni el vidrio de la probeta
+function moverMuestraA(x, y) {
+    const { w, h } = tamano;
+    const p = PROBETAS[capProbeta];
+    x = constrain(x, w / 2, CV_W - w / 2);
+    y = constrain(y, h / 2, MESA_Y - h / 2);
+    // Si estaba dentro de la probeta, solo puede salir hacia arriba
+    if (muestraEnTubo()) {
+        if (y + h / 2 > PROBETA.borde) x = PROBETA.x;
+    } else if (Math.abs(x - PROBETA.x) < p.ancho / 2 + w / 2 + 4) {
+        y = Math.min(y, PROBETA.borde - h / 2);
+    }
+    if (Math.abs(x - BALANZA.x) < BALANZA.ancho / 2 + w / 2 && y + h / 2 > BALANZA.platoY) {
+        y = BALANZA.platoY - h / 2;
+    }
+    pos.x = x;
+    pos.y = y;
+}
+
+function destinoAlSoltar() {
+    const p = PROBETAS[capProbeta];
+    if (muestraEnTubo()) return 'probeta';
+    if (Math.abs(pos.x - PROBETA.x) < p.ancho / 2 + 26 && pos.y < PROBETA.borde + 10) return 'probeta';
+    if (Math.abs(pos.x - BALANZA.x) < 95 && pos.y + tamano.h / 2 > BALANZA.platoY - 90) return 'balanza';
+    if (Math.abs(pos.x - BANDEJA.x) < BANDEJA.ancho / 2 + 20 && pos.y + tamano.h / 2 > MESA_Y - 120) return 'bandeja';
+    return 'fuera';
+}
+
+function actualizarCursor() {
+    const cv = document.querySelector('#canvas-container canvas');
+    if (!cv) return;
+    let c = 'default';
+    if (arrastre) c = 'grabbing';
+    else {
+        const q = { x: mouseX, y: mouseY };
+        if (sobreBoton(q, BOTON_ON) || sobreBoton(q, BOTON_TARA)) c = 'pointer';
+        else if (sobreLupa(q) || (!mov && sobreMuestra(q))) c = 'grab';
+    }
+    if (cv.style.cursor !== c) cv.style.cursor = c;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1052,7 +1206,7 @@ function updateTheme() {
             pantalla: '#10241a', pantallaTexto: '#5ef0a8', ledOn: '#16a34a', ledOff: '#6b7280', botonTara: '#2563eb',
             vidrio: '#5a6a84', vidrioFondo: 'rgba(255,255,255,0.35)', vidrioPie: '#8d99ae', brillo: 'rgba(255,255,255,0.7)',
             agua: 'rgba(40,110,210,0.45)', aguaBorde: '#1d5fbf', raya: '#1a2236',
-            contraste: false,
+            contraste: false, mango: '#5a4632',
         };
     } else if (isContrast) {
         TH = {
@@ -1063,7 +1217,7 @@ function updateTheme() {
             pantalla: '#000000', pantallaTexto: '#00ff88', ledOn: '#00ff88', ledOff: '#666666', botonTara: '#00ffff',
             vidrio: '#ffffff', vidrioFondo: 'rgba(255,255,255,0.06)', vidrioPie: '#666666', brillo: 'rgba(255,255,255,0.35)',
             agua: 'rgba(80,170,255,0.55)', aguaBorde: '#66ccff', raya: '#ffffff',
-            contraste: true, contornoMuestra: '#ffff00',
+            contraste: true, contornoMuestra: '#ffff00', mango: '#ffffff',
         };
     } else {
         TH = {
@@ -1074,7 +1228,7 @@ function updateTheme() {
             pantalla: '#0e1a14', pantallaTexto: '#5ef0a8', ledOn: '#34c782', ledOff: '#4b5563', botonTara: '#3b82f6',
             vidrio: '#c8d4e6', vidrioFondo: 'rgba(200,212,230,0.06)', vidrioPie: '#5b6578', brillo: 'rgba(255,255,255,0.18)',
             agua: 'rgba(55,130,215,0.50)', aguaBorde: '#7fb8ff', raya: '#e4ecf8',
-            contraste: false,
+            contraste: false, mango: '#3a2c20',
         };
     }
 }

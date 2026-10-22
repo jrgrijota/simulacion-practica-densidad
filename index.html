@@ -89,6 +89,7 @@
                     </select>
                 </div>
                 <p class="field-hint only-guiada">Balanza electrónica de 0,1 g y probeta de 100 mL con divisiones de 1 mL.</p>
+                <p class="field-hint">Arrastra la muestra y la lupa con el ratón o con el dedo. Los botones ON y TARA están en la balanza.</p>
             </section>
 
             <hr class="divider">
@@ -161,14 +162,14 @@
                     <button id="btn-describir" type="button" class="boton-panel">Describir la escala</button>
                     <button id="btn-reiniciar" type="button" class="boton-panel">↺ Empezar de nuevo</button>
                 </div>
-                <p class="field-hint">«Describir la escala» dice entre qué rayas está el agua, para quien no pueda ver la lupa.</p>
+                <p class="field-hint">«Describir la escala» dice entre qué rayas está el agua, para quien no pueda ver la lupa. Con el teclado, el tabulador lleva a los botones de los instrumentos y las flechas mueven la lupa.</p>
             </section>
 
             <details class="custom-details">
                 <summary>Cómo se lee la probeta</summary>
                 <div class="details-content">
                     <ul class="key-ideas">
-                        <li data-i18n="idea-ojos">Pon los <strong>ojos a la altura del agua</strong>. Si miras desde arriba o desde abajo, lees mal.</li>
+                        <li data-i18n="idea-ojos">Pon los <strong>ojos a la altura del agua</strong>. Si miras desde arriba o desde abajo, lees mal. En la lupa, la línea amarilla marca la altura de los ojos: ponla sobre la parte baja del menisco.</li>
                         <li data-i18n="idea-menisco">El agua forma una curva, el <strong>menisco</strong>. Lee la <strong>parte de abajo</strong> de la curva.</li>
                         <li data-i18n="idea-division">Fíjate en cuánto vale <strong>cada rayita</strong> antes de leer: en la probeta de 250 mL cada una vale 2 mL.</li>
                         <li data-i18n="idea-unidades"><strong>1 mL = 1 cm³</strong>: el volumen que sube el agua es el volumen de la muestra.</li>
@@ -181,12 +182,13 @@
         <!-- ── PANEL DE SIMULACIÓN ───────────────────────────────── -->
         <main class="simulation-panel">
 
-            <div class="canvas-toolbar barra-lab">
+            <!-- Para el teclado: aparecen al llegar con el tabulador -->
+            <div class="canvas-toolbar barra-lab" role="group" aria-label="Instrumentos">
                 <button id="btn-encender" type="button" class="canvas-btn">⏻ Encender</button>
                 <button id="btn-tarar" type="button" class="canvas-btn">⚖ Tarar</button>
                 <button id="btn-balanza" type="button" class="canvas-btn">↓ Poner en la balanza</button>
                 <button id="btn-probeta" type="button" class="canvas-btn">→ Meter en la probeta</button>
-                <button id="btn-lupa" type="button" class="canvas-btn" aria-pressed="false">🔍 Ampliar la escala</button>
+                <button id="btn-lupa" type="button" class="canvas-btn">🔍 Llevar la lupa al agua</button>
             </div>
 
             <!-- Botón de tema -->

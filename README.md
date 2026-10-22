@@ -17,6 +17,18 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
   Se puede elegir la probeta (50, 100 o 250 mL) y se pueden cometer errores reales, como pesar
   sin tarar la balanza o usar una probeta en la que la muestra no cabe.
 
+## Cómo se maneja
+
+- La **muestra** se arrastra con el ratón o con el dedo hasta el plato de la balanza o hasta la boca
+  de la probeta, donde baja despacio hasta el fondo. Si se suelta en otro sitio, vuelve a la bandeja
+  con un aviso: en el laboratorio las muestras solo se dejan en su sitio.
+- La **lupa** también se arrastra y amplía lo que tiene debajo. Su línea amarilla marca la altura de
+  los ojos: se pone sobre la parte baja del menisco para leer.
+- Los botones **ON** y **TARA** se pulsan sobre la propia balanza.
+- **Con el teclado:** el tabulador lleva a unos botones que solo aparecen al recibir el foco
+  (encender, tarar, poner en la balanza, meter en la probeta y llevar la lupa al agua), y con el
+  lienzo enfocado las flechas mueven la lupa. «Describir la escala» dice entre qué rayas está el agua.
+
 ## Criterio didáctico
 
 - La simulación **nunca muestra el volumen**: hay que leerlo en la escala de la probeta, con una
