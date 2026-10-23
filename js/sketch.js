@@ -470,6 +470,8 @@ function alLlegar(destino, origen, m) {
         } else if (agua + sumergido > maximo) {
             agua = maximo - sumergido;
             derramar();
+        } else if (agua + sumergido > p.cap + 0.05) {
+            aguaSobreEscala();
         } else if (sumergido < muestra.vol - 0.05) {
             decir(i18n.t('La muestra no ha quedado cubierta del todo por el agua.'));
         } else {
@@ -596,6 +598,12 @@ function echarAgua(ml) {
     agua += ml;
 }
 
+// El agua queda por encima de la última raya: ahí no hay escala y no se puede medir
+function aguaSobreEscala() {
+    decir(i18n.t('⚠ El agua ha quedado por encima de la última raya de la probeta: ahí no hay escala y no se puede leer el volumen.'), 'aviso');
+    errorPendiente = { tipo: 'encima', t: millis() + 1600 };
+}
+
 // El agua pasa del borde: se ve salir por arriba y bajar por fuera, y hay que empezar de nuevo
 function derramar() {
     derramado = true;
@@ -626,6 +634,11 @@ function llenadoBien() {
 
 function alTerminarDeVerter() {
     avisoVertido = '';
+    if (!derramado && !errorPendiente && agua > PROBETAS[capProbeta].cap + 0.05) {
+        aguaSobreEscala();
+        actualizarInterfaz();
+        return;
+    }
     if (nivel === 'guiada' && pasoActual() <= 4 && agua > 0) {
         const p = PROBETAS[capProbeta];
         if (agua + muestra.vol > p.cap - 1) {
@@ -688,6 +701,10 @@ const ERRORES = {
         titulo: 'Se ha derramado agua de la probeta',
         texto: 'El agua ha pasado del borde y se ha salido de la probeta. Con parte del agua fuera ya no se sabe cuánta agua hay dentro, así que las medidas de volumen no valen. Hay que volver a empezar: echa menos agua, de modo que al meter la muestra el agua no pase de la última raya, o usa una probeta más grande.',
     },
+    encima: {
+        titulo: 'El agua está por encima de la escala',
+        texto: 'El agua ha quedado por encima de la última raya de la probeta. Ahí no hay rayas, así que no se puede leer el volumen y la medida no vale. Hay que volver a empezar: echa menos agua, de modo que con la muestra dentro el agua siga por debajo de la última raya, o usa una probeta más grande.',
+    },
     mojada: {
         titulo: 'La muestra está mojada',
         texto: 'La muestra acaba de salir del agua y lleva agua pegada, que también pesa: la balanza marca más masa de la que tiene la muestra. La masa se mide con la muestra seca, antes de meterla en la probeta. Hay que volver a empezar la práctica desde el principio.',
@@ -698,6 +715,7 @@ const ERRORES = {
 const VINETAS = {
     caida: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-vidrio-relleno" x="62" y="22" width="36" height="66"/><rect class="v-agua" x="63" y="52" width="34" height="36"/><polygon class="v-muestra" points="72,41 86,38 91,48 85,57 73,55 68,47"/><path class="v-vidrio" d="M56 22H104M62 22V88H98V22M52 92 58 86H102L108 92"/><path class="v-mov" d="M74 24V32M80 21V30M86 24V32"/><path class="v-gota" transform="translate(48 18) rotate(-40)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(112 14) rotate(40)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(36 36) rotate(-60)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(124 32) rotate(60)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(28 62) rotate(-100)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(132 58) rotate(100)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><ellipse class="v-agua" cx="38" cy="91" rx="12" ry="2.5"/><ellipse class="v-agua" cx="124" cy="91" rx="10" ry="2.5"/></svg>',
     rebose: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-vidrio-relleno" x="62" y="14" width="36" height="74"/><rect class="v-agua" x="63" y="16" width="34" height="72"/><path class="v-agua" d="M58 15Q80 4 102 15Z"/><path class="v-chorro" d="M57 15C55 30 56 60 55 86M103 15C105 30 104 60 105 86"/><path class="v-vidrio" d="M56 14H104M62 14V88H98V14M52 92 58 86H102L108 92"/><path class="v-gota" transform="translate(55 80) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(105 74) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><ellipse class="v-agua" cx="40" cy="91" rx="16" ry="2.8"/><ellipse class="v-agua" cx="120" cy="91" rx="16" ry="2.8"/></svg>',
+    encima: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-vidrio-relleno" x="62" y="10" width="36" height="78"/><rect class="v-agua" x="63" y="17" width="34" height="71"/><rect class="v-zona" x="63" y="17" width="34" height="9"/><path class="v-raya" d="M62 26H76M62 36H70M62 46H76M62 56H70M62 66H76M62 76H70"/><path class="v-vidrio" d="M56 10H104M62 10V88H98V10M52 92 58 86H102L108 92"/><path class="v-ojo" d="M24 21Q32 14 40 21Q32 28 24 21Z"/><circle class="v-pupila" cx="32" cy="21" r="2.6"/><path class="v-mira" d="M44 21H60"/><text class="v-interroga" x="118" y="27">?</text></svg>',
     mojada: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-columna" x="74" y="50" width="12" height="9"/><path class="v-balanza" d="M26 90 36 58H124L134 90Z"/><rect class="v-pantalla" x="42" y="65" width="52" height="17" rx="2"/><text class="v-lectura" x="90" y="78" text-anchor="end">35,6</text><rect class="v-plato" x="44" y="46" width="72" height="5" rx="2.5"/><polygon class="v-muestra" points="64,45 68,24 82,17 96,24 97,40 86,46"/><ellipse class="v-agua" cx="81" cy="45.5" rx="24" ry="2.2"/><path class="v-gota" transform="translate(74 30) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(88 27) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(80 38) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(118 58) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(118 72) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/></svg>',
 };
 
