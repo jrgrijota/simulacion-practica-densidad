@@ -72,6 +72,7 @@ let taradaVacia = false;
 let agua = 0;                  // mL de agua en la probeta (baja si se derrama)
 let nivelMostrado = 0;         // mL que marca el agua (se anima)
 let derramado = false;
+let rebose = null;             // { t }: el agua se sale por arriba y baja por fuera del vidrio
 let lupaPos = { x: 0, y: 0 };
 let frascoPos = { ...FRASCO_REPOSO };
 let vertiendo = false;         // el frasco está echando agua en la probeta
@@ -259,6 +260,7 @@ function reiniciar() {
     agua = 0;                  // la probeta empieza vacía: se llena con el frasco lavador
     nivelMostrado = agua;
     derramado = false;
+    rebose = null;
     datos = {};
     correctos = {};
     eleccion = null;
@@ -467,9 +469,7 @@ function alLlegar(destino, origen, m) {
             // Ya se había derramado: no se pierde más agua
         } else if (agua + sumergido > maximo) {
             agua = maximo - sumergido;
-            derramado = true;
-            charcos.push({ x: PROBETA.x - p.ancho / 2 - 30, w: 26 }, { x: PROBETA.x + p.ancho / 2 + 26, w: 20 });
-            decir(i18n.t('¡Se ha salido agua por arriba! Esta medida no vale: usa una probeta más grande o echa menos agua.'));
+            derramar();
         } else if (sumergido < muestra.vol - 0.05) {
             decir(i18n.t('La muestra no ha quedado cubierta del todo por el agua.'));
         } else {
@@ -567,11 +567,19 @@ function echarAgua(ml) {
     const maximo = p.cap * REBOSE - volumenSumergido();
     if (agua + ml > maximo) {
         if (agua < maximo) agua = maximo;
-        if (avisoVertido.indexOf('borde') < 0) charcos.push({ x: PROBETA.x - p.ancho / 2 - 30, w: 24 }, { x: PROBETA.x + p.ancho / 2 + 24, w: 18 });
-        decirVertido(i18n.t('El agua ya llega al borde y se está saliendo por arriba.'));
+        porVerter = 0;
+        if (!derramado) derramar();
         return;
     }
     agua += ml;
+}
+
+// El agua pasa del borde: se ve salir por arriba y bajar por fuera, y hay que empezar de nuevo
+function derramar() {
+    derramado = true;
+    rebose = { t: millis() };
+    decir(i18n.t('¡Se está saliendo el agua por arriba de la probeta!'), 'aviso');
+    errorPendiente = { tipo: 'rebose', t: millis() + 2100 };
 }
 
 // Un aviso mientras se echa agua se da una sola vez
@@ -654,6 +662,10 @@ const ERRORES = {
         titulo: 'Se ha salido agua de la probeta',
         texto: 'Has dejado caer la muestra y el agua ha salpicado fuera de la probeta. El volumen de agua inicial ya no es válido, porque al dejar caer la muestra se ha salido parte del agua. Hay que volver a empezar: llena la probeta e introduce la muestra con cuidado, bajándola con la mano hasta el agua antes de soltarla.',
     },
+    rebose: {
+        titulo: 'Se ha derramado agua de la probeta',
+        texto: 'El agua ha pasado del borde y se ha salido de la probeta. Con parte del agua fuera ya no se sabe cuánta agua hay dentro, así que las medidas de volumen no valen. Hay que volver a empezar: echa menos agua, de modo que al meter la muestra el agua no pase de la última raya, o usa una probeta más grande.',
+    },
     mojada: {
         titulo: 'La muestra está mojada',
         texto: 'La muestra acaba de salir del agua y lleva agua pegada, que también pesa: la balanza marca más masa de la que tiene la muestra. La masa se mide con la muestra seca, antes de meterla en la probeta. Hay que volver a empezar la práctica desde el principio.',
@@ -663,6 +675,7 @@ const ERRORES = {
 // Viñeta de cada error (SVG en línea; los colores salen de practica.css)
 const VINETAS = {
     caida: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-vidrio-relleno" x="62" y="22" width="36" height="66"/><rect class="v-agua" x="63" y="52" width="34" height="36"/><polygon class="v-muestra" points="72,41 86,38 91,48 85,57 73,55 68,47"/><path class="v-vidrio" d="M56 22H104M62 22V88H98V22M52 92 58 86H102L108 92"/><path class="v-mov" d="M74 24V32M80 21V30M86 24V32"/><path class="v-gota" transform="translate(48 18) rotate(-40)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(112 14) rotate(40)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(36 36) rotate(-60)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(124 32) rotate(60)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(28 62) rotate(-100)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(132 58) rotate(100)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><ellipse class="v-agua" cx="38" cy="91" rx="12" ry="2.5"/><ellipse class="v-agua" cx="124" cy="91" rx="10" ry="2.5"/></svg>',
+    rebose: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-vidrio-relleno" x="62" y="14" width="36" height="74"/><rect class="v-agua" x="63" y="16" width="34" height="72"/><path class="v-agua" d="M58 15Q80 4 102 15Z"/><path class="v-chorro" d="M57 15C55 30 56 60 55 86M103 15C105 30 104 60 105 86"/><path class="v-vidrio" d="M56 14H104M62 14V88H98V14M52 92 58 86H102L108 92"/><path class="v-gota" transform="translate(55 80) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(105 74) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><ellipse class="v-agua" cx="40" cy="91" rx="16" ry="2.8"/><ellipse class="v-agua" cx="120" cy="91" rx="16" ry="2.8"/></svg>',
     mojada: '<svg viewBox="0 0 160 100" width="160" height="100"><line class="v-mesa" x1="4" y1="92" x2="156" y2="92"/><rect class="v-columna" x="74" y="50" width="12" height="9"/><path class="v-balanza" d="M26 90 36 58H124L134 90Z"/><rect class="v-pantalla" x="42" y="65" width="52" height="17" rx="2"/><text class="v-lectura" x="90" y="78" text-anchor="end">35,6</text><rect class="v-plato" x="44" y="46" width="72" height="5" rx="2.5"/><polygon class="v-muestra" points="64,45 68,24 82,17 96,24 97,40 86,46"/><ellipse class="v-agua" cx="81" cy="45.5" rx="24" ry="2.2"/><path class="v-gota" transform="translate(74 30) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(88 27) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(80 38) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(118 58) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/><path class="v-gota" transform="translate(118 72) rotate(0)" d="M0-5C3-1 3.5 3 0 3.5-3.5 3-3-1 0-5Z"/></svg>',
 };
 
@@ -709,9 +722,15 @@ function encender() {
     balanzaT = millis();
     tara = 0;
     taradaVacia = false;
-    decir(balanzaEncendida
-        ? i18n.t('Balanza encendida: marca {m} g sin nada encima. Pulsa TARA para ponerla a cero.', { m: lecturaBalanzaTexto() })
-        : i18n.t('Balanza apagada.'));
+    if (balanzaEncendida && lugar === 'balanza') {
+        // Como las de verdad, al encenderse se pone a cero con lo que tenga en el plato
+        tara = cargaBalanza() + deriva;
+        decir(i18n.t('⚠ Has encendido la balanza con la muestra encima. Al encenderse, la balanza se pone a cero con lo que tiene en el plato: ahora marca 0,0 g aunque la muestra tiene masa. Quita la muestra, pon la balanza a cero con el plato vacío y vuelve a pesarla.'), 'aviso');
+    } else {
+        decir(balanzaEncendida
+            ? i18n.t('Balanza encendida: marca {m} g sin nada encima. Pulsa TARA para ponerla a cero.', { m: lecturaBalanzaTexto() })
+            : i18n.t('Balanza apagada.'));
+    }
     actualizarInterfaz();
 }
 
@@ -747,9 +766,8 @@ function tarar() {
     if (!balanzaEncendida) return;
     tara = cargaBalanza() + deriva;
     taradaVacia = lugar !== 'balanza';
-    decir(lugar === 'balanza'
-        ? i18n.t('Balanza tarada con la muestra encima: ahora marca 0,0 g aunque la muestra tiene masa.')
-        : i18n.t('Balanza tarada: marca 0,0 g.'));
+    if (lugar === 'balanza') decir(i18n.t('⚠ Has tarado la balanza con la muestra encima: ahora marca 0,0 g aunque la muestra tiene masa. Quita la muestra, pulsa TARA con el plato vacío y vuelve a pesarla.'), 'aviso');
+    else decir(i18n.t('Balanza tarada: marca 0,0 g.'));
     actualizarInterfaz();
 }
 
@@ -1351,19 +1369,42 @@ function dibujarProbeta() {
     // Muestra sumergida (detrás del agua)
     if (muestraEnTubo()) dibujarMuestra(pos.x, pos.y);
 
-    // Agua: algo más clara bajo la superficie
+    // Agua con su menisco: junto al vidrio el agua sube por la pared y en el centro queda
+    // plana. La parte baja del menisco, la que se lee, está justo en yAgua.
     const yAgua = yDeMl(nivelMostrado);
-    noStroke();
-    fill(TH.agua);
-    rect(x0 + 1, yAgua, w - 2, PROBETA.fondo - yAgua);
-    if (PROBETA.fondo - yAgua > 6) {
-        fill(TH.aguaLuz);
-        rect(x0 + 1, yAgua + 1.5, w - 2, 3);
+    if (nivelMostrado > 0.05) {
+        const sube = Math.min(3 + w * 0.04, PROBETA.fondo - yAgua + 2);   // lo que trepa por el vidrio
+        const curva = w * 0.34;                                            // ancho de la zona curvada
+        const a = x0 + 1, b = x1 - 1;
+        const menisco = (dy = 0) => {
+            vertex(a, yAgua - sube + dy);
+            bezierVertex(a, yAgua - sube * 0.25 + dy, a + curva * 0.45, yAgua + dy, a + curva, yAgua + dy);
+            vertex(b - curva, yAgua + dy);
+            bezierVertex(b - curva * 0.45, yAgua + dy, b, yAgua - sube * 0.25 + dy, b, yAgua - sube + dy);
+        };
+        noStroke();
+        fill(TH.agua);
+        beginShape();
+        vertex(a, PROBETA.fondo);
+        menisco();
+        vertex(b, PROBETA.fondo);
+        endShape(CLOSE);
+        // Bajo la superficie, una banda más clara que acompaña la curva
+        noFill();
+        if (PROBETA.fondo - yAgua > 6) {
+            stroke(TH.aguaLuz);
+            strokeWeight(4);
+            beginShape();
+            menisco(2.8);
+            endShape();
+        }
+        // Superficie: una línea que sigue el menisco
+        stroke(TH.aguaBorde);
+        strokeWeight(1.8);
+        beginShape();
+        menisco();
+        endShape();
     }
-    noFill();
-    stroke(TH.aguaBorde);
-    strokeWeight(1.6);
-    bezier(x0 + 1, yAgua - 3, x0 + w * 0.3, yAgua + 1.5, x1 - w * 0.3, yAgua + 1.5, x1 - 1, yAgua - 3);
 
     // Reflejos en la mitad derecha, lejos de las rayas y los números
     stroke(TH.brillo);
@@ -1416,6 +1457,7 @@ function dibujarProbeta() {
     line(x0 - 6, PROBETA.borde, x0, PROBETA.borde + 4);
     line(x1 + 6, PROBETA.borde, x1, PROBETA.borde + 4);
     noStroke();
+    if (rebose) dibujarRebose(x0, x1);
 
     rotulo([i18n.t('probeta de {c} mL', { c: p.cap }), i18n.t('división de {d} mL', { d: p.div })], PROBETA.x);
 }
@@ -1489,6 +1531,49 @@ function dibujarFrasco() {
     text('H₂O', x + 2, y - 65);
     textStyle(NORMAL);
     rotulo([i18n.t('frasco'), i18n.t('lavador')], FRASCO_REPOSO.x, 2);
+}
+
+// Agua que se sale por arriba: rebosa por la boca, baja por fuera del vidrio y encharca la mesa
+function dibujarRebose(x0, x1) {
+    const k = constrain((millis() - rebose.t) / 1100, 0, 1);
+    const yB = PROBETA.borde, yPie = MESA_Y - 14;
+    const yFin = yB + (MESA_Y - yB) * k;
+    // Abombado sobre la boca
+    noStroke();
+    fill(TH.agua);
+    beginShape();
+    vertex(x0 - 6, yB);
+    bezierVertex(x0, yB - 7, x1, yB - 7, x1 + 6, yB);
+    endShape(CLOSE);
+    // Chorros por las dos paredes
+    noFill();
+    for (const [xa, xb] of [[x0 - 6, x0 - 2], [x1 + 6, x1 + 2]]) {
+        stroke(TH.agua);
+        strokeWeight(6);
+        line(xa, yB, xb, Math.min(yFin, yPie));
+        stroke(TH.aguaBorde);
+        strokeWeight(1.8);
+        line(xa, yB, xb, Math.min(yFin, yPie));
+        if (k < 1) {
+            noStroke();
+            fill(TH.aguaBorde);
+            gotaLagrima(xb, Math.min(yFin, yPie) + 3, 3, HALF_PI);
+            noFill();
+        }
+    }
+    // Charcos que crecen junto al pie
+    if (yFin >= yPie) {
+        const c = constrain((millis() - rebose.t - 1100 * (yPie - yB) / (MESA_Y - yB)) / 700, 0, 1);
+        noStroke();
+        fill(TH.agua);
+        ellipse(x0 - 34, MESA_Y + 1, 70 * c, 6.5);
+        ellipse(x1 + 34, MESA_Y + 1, 64 * c, 6.5);
+        if (!TH.contraste) {
+            fill(TH.aguaReflejo);
+            ellipse(x0 - 40, MESA_Y + 0.4, 26 * c, 1.6);
+            ellipse(x1 + 28, MESA_Y + 0.4, 22 * c, 1.6);
+        }
+    }
 }
 
 function dibujarCharcos() {

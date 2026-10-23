@@ -329,3 +329,5 @@ body.theme-contrast .v-lectura { fill: #00ff88; }
     .error-lab * { transition: none !important; animation: none !important; }
 }
 body:not(.theme-light):not(.theme-contrast) .botones-tactiles .canvas-btn { color: #d8dee8; }
+.v-chorro { fill: none; stroke: #3782d7; stroke-opacity: 0.75; stroke-width: 3.5; stroke-linecap: round; }
+body.theme-contrast .v-chorro { stroke: #66ccff; stroke-opacity: 1; }
