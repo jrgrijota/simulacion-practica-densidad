@@ -50,7 +50,9 @@ const INDICACIONES = [
 
 // ── Estado ─────────────────────────────────────────────────
 let nivel = 'guiada';          // 'guiada' | 'libre'
-let muestra = MUESTRAS[Math.floor(Math.random() * MUESTRAS.length)];   // al azar, salvo ?muestra=N
+let muestraDef = MUESTRAS[Math.floor(Math.random() * MUESTRAS.length)];   // al azar, salvo ?muestra=N
+let muestra = muestraDef;      // la de este intento: mismo material, masa y volumen al azar
+let tinte = 0;
 let capProbeta = 100;
 let forma = [];                // polígono de la muestra (unidades relativas)
 let tamano = { w: 40, h: 60 };
@@ -180,7 +182,7 @@ function leerParametros() {
     const p = new URLSearchParams(location.search);
     if (p.get('nivel') === 'libre') nivel = 'libre';
     const n = parseInt(p.get('muestra'), 10);
-    if (n >= 1 && n <= MUESTRAS.length) muestra = MUESTRAS[n - 1];
+    if (n >= 1 && n <= MUESTRAS.length) muestraDef = MUESTRAS[n - 1];
     const c = parseInt(p.get('probeta'), 10);
     if (PROBETAS[c]) {
         capProbeta = c;
@@ -192,7 +194,7 @@ function leerParametros() {
 //  Muestra, probeta y reinicio
 // ============================================================
 function elegirMuestra(n) {
-    muestra = tamanoAlAzar(MUESTRAS[n - 1]);
+    muestraDef = MUESTRAS[n - 1];
     document.getElementById('select-muestra').value = String(n);
     const rnd = aleatorioConSemilla(n * 7 + 3);
     forma = [];
@@ -202,27 +204,30 @@ function elegirMuestra(n) {
         const r = 0.80 + rnd() * 0.22;
         forma.push([Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5]);
     }
-    muestra.tinte = Math.round((rnd() - 0.5) * 26);
-    // A escala: el alto sale del volumen, así se ve tan grande como el agua que desplaza
-    const w = muestra.ancho;
-    tamano = { w, h: muestra.vol * PX3_POR_ML / (RELLENO * w * w) };
+    tinte = Math.round((rnd() - 0.5) * 26);
     reiniciar();
 }
 
-// En el nivel libre cada muestra conserva su material, pero sale con otro tamaño
-// cada vez (y su masa, ρ·V): así cada alumno tiene sus propios números.
-// El ancho crece con la raíz cúbica del volumen y no pasa del que cabe en su probeta.
+// Cada vez que se empieza, la muestra conserva su material (su densidad) pero sale
+// con otro volumen, y su masa es ρ·V. Así, repitiendo con la misma muestra se ve
+// que la masa cambia y la densidad no.
+//   · Hierro y cobre, de 17,5 a 25 cm³; los demás, desde 11 cm³. Con eso, en el nivel
+//     guiado ninguna lectura que se da por buena lleva a otro material.
+//   · El ancho crece con la raíz cúbica del volumen y no pasa del que cabe en su
+//     probeta (las estrechas siguen cabiendo en la de 50 mL).
 function tamanoAlAzar(def) {
-    if (nivel !== 'libre') return { ...def };
     const limite = def.ancho < 30 ? 29.9 : 41.5;
-    const maximo = Math.min(1.3, Math.pow(limite / def.ancho, 3));
-    const f = 0.7 + Math.random() * (maximo - 0.7);
-    const vol = Math.round(def.vol * f * 10) / 10;
+    const minimo = ['hierro', 'cobre'].includes(def.mat.id) ? 17.5 : 11;
+    const maximo = Math.min(25, def.vol * Math.pow(limite / def.ancho, 3));
+    const vol = Math.floor((minimo + Math.random() * (maximo - minimo)) * 10) / 10;   // hacia abajo: nunca pasa del máximo
     const ancho = def.ancho * Math.cbrt(vol / def.vol);
-    return { ...def, vol, ancho, masa: Math.round(def.mat.rho * vol * 10) / 10 };
+    return { ...def, vol, ancho, masa: Math.round(def.mat.rho * vol * 10) / 10, tinte };
 }
 
 function reiniciar() {
+    muestra = tamanoAlAzar(muestraDef);
+    // A escala: el alto sale del volumen, así se ve tan grande como el agua que desplaza
+    tamano = { w: muestra.ancho, h: muestra.vol * PX3_POR_ML / (RELLENO * muestra.ancho * muestra.ancho) };
     lugar = 'bandeja';
     mov = null;
     arrastre = null;
@@ -849,7 +854,7 @@ function elegirMaterial(id) {
         terminado = true;
         const err = Math.abs(rhoAlumno - mat.rho) / mat.rho * 100;
         res.className = 'resultado bien';
-        res.textContent = i18n.t('✓ {mat}. Práctica terminada. Tu densidad es {r} g/cm³ y la de la tabla, {t} g/cm³. Error relativo: |{r} − {t}| / {t} × 100 = {e} %.', {
+        res.textContent = i18n.t('✓ {mat}. Práctica terminada. Tu densidad es {r} g/cm³ y la de la tabla, {t} g/cm³. Error relativo: |{r} − {t}| / {t} × 100 = {e} %. Pulsa «Empezar de nuevo» y repítela con la misma muestra: tendrá otra masa y otro volumen. ¿Te sale la misma densidad?', {
             mat: i18n.t(mat.nombre), r: rhoTxt, e: i18n.num(err, 1), t: i18n.num(mat.rho, 2),
         });
         decir(i18n.t('Práctica terminada. La muestra {n} es de {mat}.', { n: muestra.n, mat: i18n.t(mat.nombre).toLowerCase() }));
@@ -881,7 +886,7 @@ function setNivel(n) {
         capProbeta = 100;
         document.getElementById('select-probeta').value = '100';
     }
-    elegirMuestra(muestra.n);   // en el nivel libre, con un tamaño nuevo
+    elegirMuestra(muestraDef.n);
     fitCanvas();
 }
 
