@@ -257,3 +257,75 @@ body.theme-contrast .error-caja p { color: #ffffff; }
 
 /* Sin barra de botones visible, el lienzo aprovecha todo el alto */
 #canvas-container { padding-top: 14px; }
+
+/* ── Botón con icono (dado de «Otra al azar») ── */
+.boton-icono { display: inline-flex; align-items: center; gap: 7px; }
+.boton-icono svg { flex: none; }
+
+/* ── Móvil: las teclas ON, TARA y VACIAR, grandes y bajo el lienzo ── */
+.botones-tactiles { display: none; }
+@media (max-width: 700px) {
+    .botones-tactiles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        order: 1;
+        width: 100%;
+        padding: 4px 14px 62px;
+    }
+    #canvas-container { padding-bottom: 6px; }
+    .botones-tactiles .canvas-btn { min-height: 44px; padding: 6px 8px; letter-spacing: 0; white-space: normal; line-height: 1.2; }
+}
+
+/* ── Aviso de error: franja roja, icono y viñeta de lo que ha pasado ── */
+.error-caja { border-color: #ff5a5a; padding: 0; overflow: hidden; }
+.error-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #b3261e;
+    color: #ffffff;
+    padding: 12px 22px;
+}
+.error-cabecera .error-icono { flex: none; color: #ffffff; }
+.error-caja .error-cabecera h2 { color: #ffffff; margin: 0; }
+.error-vineta { padding: 16px 22px 0; }
+.error-vineta svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.error-caja p { padding: 12px 22px 0; }
+.error-caja .boton-error { margin: 0 22px 20px; border-color: #ff5a5a; }
+.error-vineta {
+    --v-linea: #c8d4e6;
+    --v-vidrio-relleno: rgba(200, 212, 230, 0.08);
+}
+.v-mesa { stroke: var(--v-linea); stroke-width: 2; }
+.v-vidrio { fill: none; stroke: var(--v-linea); stroke-width: 2; stroke-linejoin: round; }
+.v-vidrio-relleno { fill: var(--v-vidrio-relleno); }
+.v-agua { fill: #3782d7; fill-opacity: 0.6; }
+.v-gota { fill: #7fb8ff; }
+.v-muestra { fill: #9a6a8c; stroke: #4a2c44; stroke-width: 1.2; stroke-linejoin: round; }
+.v-balanza { fill: #d9dee6; stroke: #8d95a5; stroke-width: 1.5; stroke-linejoin: round; }
+.v-columna { fill: #9aa2b0; }
+.v-plato { fill: #c9cfd8; stroke: #8d95a5; }
+.v-pantalla { fill: #0c1712; }
+.v-lectura { fill: #5ef0a8; font: 700 11px monospace; }
+.v-mov { stroke: var(--v-linea); stroke-width: 1.5; stroke-linecap: round; opacity: 0.6; fill: none; }
+body.theme-light .error-caja { border-color: #c62828; }
+body.theme-light .error-cabecera { background: #b3261e; }
+body.theme-light .error-caja .boton-error { border-color: #c62828; }
+body.theme-light .error-vineta { --v-linea: #5a6a84; --v-vidrio-relleno: rgba(90, 106, 132, 0.08); }
+body.theme-light .v-gota { fill: #1d5fbf; }
+body.theme-light .v-muestra { fill: #8e5c82; }
+body.theme-light .v-balanza { fill: #f7f9fb; stroke: #7d8aa0; }
+body.theme-contrast .error-caja { border: 2px solid #ff4444; }
+body.theme-contrast .error-cabecera { background: #000000; border-bottom: 2px solid #ff4444; }
+body.theme-contrast .error-cabecera .error-icono { color: #ff4444; }
+body.theme-contrast .error-caja .boton-error { border-color: #ff4444; }
+body.theme-contrast .error-vineta { --v-linea: #ffffff; --v-vidrio-relleno: transparent; }
+body.theme-contrast .v-muestra { fill: #b07aa0; stroke: #ffff00; stroke-width: 2; }
+body.theme-contrast .v-balanza, body.theme-contrast .v-plato { fill: #000000; stroke: #ffffff; }
+body.theme-contrast .v-lectura { fill: #00ff88; }
+
+@media (prefers-reduced-motion: reduce) {
+    .error-lab * { transition: none !important; animation: none !important; }
+}
+body:not(.theme-light):not(.theme-contrast) .botones-tactiles .canvas-btn { color: #d8dee8; }

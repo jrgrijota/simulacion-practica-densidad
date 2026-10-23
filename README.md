@@ -46,7 +46,7 @@ Es la primera de la gama **Prácticas de laboratorio** de [simulaciencia.es](htt
   material (su densidad): la masa y el volumen salen al azar cada vez que se empieza, en los dos
   niveles (la masa es ρ·V). Así cada alumno tiene sus propios números y, repitiendo con la misma
   muestra, se ve que la masa cambia y la densidad no. La clave da el material y su densidad. Todas se hunden en agua. La forma es irregular para que la inmersión tenga sentido, y el
-  aspecto no delata el material: todas están pintadas del mismo color mate.
+  aspecto no delata el material: todas están pintadas del mismo color mate (ciruela, que no es el de ningún material de la tabla).
 - Las muestras se dibujan **a escala**: su tamaño corresponde al agua que desplazan. Por eso son
   alargadas, como las que caben en una probeta real. Solo las más estrechas (5, 6, 12 y 15) caben en
   la de 50 mL.
