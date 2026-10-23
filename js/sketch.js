@@ -23,7 +23,6 @@ const PICO = { x: -60, y: -126 };              // punta del pico, respecto a la 
 // en torno al 60 % de su caja, como una piedra irregular.
 const PX3_POR_ML = Math.PI / 4 * 48 * 48 * 2.6;
 const RELLENO = 0.6 * 0.9;
-const REBOSE   = 1.12;                // la probeta admite un 12 % más por encima de la última raya
 const DURACION_MOV = 1.1;             // s que tarda la muestra en ir de un sitio a otro
 
 const PASOS = [
@@ -131,6 +130,7 @@ function draw() {
     avanzarFrasco();
     avanzarAgua();
     avanzarGotas();
+    vigilarRebose();
     if (volumenSumergido() > 0.01) mojada = true;
     if (errorPendiente && millis() > errorPendiente.t) {
         const tipo = errorPendiente.tipo;
@@ -458,7 +458,7 @@ function alLlegar(destino, origen, m) {
         if (mojada) errorPendiente = { tipo: 'mojada', t: millis() + 1400 };
     } else if (destino === 'probeta') {
         const p = PROBETAS[capProbeta];
-        const maximo = p.cap * REBOSE;
+        const maximo = capacidadMax();
         const sumergido = volumenSumergido();
         if (m && m.caida && m.salpicado) {
             decir(i18n.t('¡Has dejado caer la muestra y el agua ha salpicado!'), 'aviso');
@@ -498,8 +498,30 @@ function volumenSumergido() {
 }
 
 function nivelObjetivo() {
+    return Math.min(agua + volumenSumergido(), capacidadMax());
+}
+
+// Lo que trepa el menisco por el vidrio (px)
+function subeMenisco() {
+    return 3 + PROBETAS[capProbeta].ancho * 0.04;
+}
+
+// mL con los que el agua, menisco incluido, llega al borde: un poco más se derrama
+function capacidadMax() {
     const p = PROBETAS[capProbeta];
-    return Math.min(agua + volumenSumergido(), p.cap * REBOSE);
+    const pxPorMl = (PROBETA.fondo - PROBETA.tope) / p.cap;
+    return (PROBETA.fondo - PROBETA.borde - subeMenisco() - 1) / pxPorMl;
+}
+
+// En cuanto el agua llega al borde se derrama, también mientras baja o cae la muestra
+function vigilarRebose() {
+    if (derramado || agua <= 0) return;
+    const sumergido = volumenSumergido();
+    if (agua + sumergido > capacidadMax() + 1e-6) {
+        agua = Math.max(0, capacidadMax() - sumergido);
+        porVerter = 0;
+        derramar();
+    }
 }
 
 function avanzarAgua() {
@@ -564,7 +586,7 @@ function avanzarFrasco() {
 
 function echarAgua(ml) {
     const p = PROBETAS[capProbeta];
-    const maximo = p.cap * REBOSE - volumenSumergido();
+    const maximo = capacidadMax() - volumenSumergido();
     if (agua + ml > maximo) {
         if (agua < maximo) agua = maximo;
         porVerter = 0;
@@ -1373,7 +1395,7 @@ function dibujarProbeta() {
     // plana. La parte baja del menisco, la que se lee, está justo en yAgua.
     const yAgua = yDeMl(nivelMostrado);
     if (nivelMostrado > 0.05) {
-        const sube = Math.min(3 + w * 0.04, PROBETA.fondo - yAgua + 2);   // lo que trepa por el vidrio
+        const sube = Math.min(subeMenisco(), PROBETA.fondo - yAgua + 2);   // lo que trepa por el vidrio
         const curva = w * 0.34;                                            // ancho de la zona curvada
         const a = x0 + 1, b = x1 - 1;
         const menisco = (dy = 0) => {
