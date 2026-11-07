@@ -77,7 +77,7 @@
                     <label for="select-muestra">Muestra desconocida</label>
                     <div class="fila-muestra">
                         <select id="select-muestra" class="custom-select"></select>
-                        <button id="btn-azar" type="button" class="boton-panel">🎲 Otra al azar</button>
+                        <button id="btn-azar" type="button" class="boton-panel boton-icono"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/></svg>Otra al azar</button>
                     </div>
                 </div>
                 <div class="input-wrapper only-libre">
@@ -228,10 +228,21 @@
 
             <div id="canvas-container"></div>
 
+            <!-- En el móvil, las teclas del lienzo son muy pequeñas: aquí hacen lo mismo -->
+            <div class="botones-tactiles" role="group" aria-label="Teclas de los instrumentos">
+                <button id="tactil-on" type="button" class="canvas-btn">Balanza: ON</button>
+                <button id="tactil-tara" type="button" class="canvas-btn">Balanza: TARA</button>
+                <button id="tactil-vaciar" type="button" class="canvas-btn">Probeta: VACIAR</button>
+            </div>
+
             <!-- Errores que obligan a empezar de nuevo -->
             <div id="error-lab" class="error-lab" role="alertdialog" aria-modal="true" aria-labelledby="error-titulo" aria-describedby="error-texto" hidden>
                 <div class="error-caja">
-                    <h2 id="error-titulo"></h2>
+                    <div class="error-cabecera">
+                        <svg class="error-icono" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 22.5 21h-21z" fill="currentColor"/><path d="M12 9v5.5" stroke="#b3261e" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.4" fill="#b3261e"/></svg>
+                        <h2 id="error-titulo"></h2>
+                    </div>
+                    <div id="error-vineta" class="error-vineta" aria-hidden="true"></div>
                     <p id="error-texto"></p>
                     <button id="error-reiniciar" type="button" class="boton-panel boton-error">↺ Volver a empezar con la misma muestra</button>
                 </div>
