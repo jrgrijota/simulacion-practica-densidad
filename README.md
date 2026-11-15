@@ -79,4 +79,4 @@ La interfaz está en español, inglés, catalán, euskera y gallego: `?lang=en`,
 | `css/practica.css` | Estilos propios: pasos, cuaderno, tabla de densidades y botones de los instrumentos |
 | `js/muestras.js` | Tabla de densidades, las 20 muestras y las probetas |
 | `js/sketch.js` | Mesa de laboratorio, balanza, probeta, lupa, pasos y comprobaciones |
-| `js/i18n.js`, `js/i18n-en.js`, `js/i18n-ca.js`, `js/i18n-eu.js`, `js/i18n-gl.js` | Idioma de la interfaz (diccionarios pendientes) |
+| `js/i18n.js`, `js/i18n-en.js`, `js/i18n-ca.js`, `js/i18n-eu.js`, `js/i18n-gl.js` | Idioma de la interfaz |
