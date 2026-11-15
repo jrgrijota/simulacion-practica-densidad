@@ -68,7 +68,7 @@ Parámetros de la dirección, para repartir la práctica:
 | `?muestra=7` | Empieza con la muestra 7 (de 1 a 20); sin él, sale una al azar |
 | `?probeta=250` | En el nivel libre, empieza con la probeta de 250 mL (50, 100 o 250) |
 
-Por ahora la interfaz solo está en español; las traducciones se harán con la versión definitiva.
+La interfaz está en español, inglés, catalán, euskera y gallego: `?lang=en`, `?lang=ca`, `?lang=eu` o `?lang=gl` (diccionarios en `js/i18n-*.js`).
 
 ## Estructura
 
@@ -79,4 +79,4 @@ Por ahora la interfaz solo está en español; las traducciones se harán con la 
 | `css/practica.css` | Estilos propios: pasos, cuaderno, tabla de densidades y botones de los instrumentos |
 | `js/muestras.js` | Tabla de densidades, las 20 muestras y las probetas |
 | `js/sketch.js` | Mesa de laboratorio, balanza, probeta, lupa, pasos y comprobaciones |
-| `js/i18n.js`, `js/i18n-en.js`, `js/i18n-ca.js`, `js/i18n-eu.js`, `js/i18n-gl.js` | Idioma de la interfaz (diccionarios pendientes) |
+| `js/i18n.js`, `js/i18n-en.js`, `js/i18n-ca.js`, `js/i18n-eu.js`, `js/i18n-gl.js` | Idioma de la interfaz |

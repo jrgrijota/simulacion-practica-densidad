@@ -1979,6 +1979,7 @@ function dibujarRotulos() {
     const paso = pasoActual();
     let cuerpo = hayMensaje ? mensaje : indicacion();
     if (!hayMensaje && nivel === 'guiada' && paso <= N_PASOS) cuerpo = cuerpo.replace(/^[^:]{1,16}:\s+/, '');
+    cuerpo = cuerpo.charAt(0).toUpperCase() + cuerpo.slice(1);
     cuerpo = cuerpo.replace(/^⚠\s*/, '');
     const etiqueta = esAviso ? i18n.t('AVISO')
         : nivel === 'libre' ? i18n.t('NIVEL LIBRE')
