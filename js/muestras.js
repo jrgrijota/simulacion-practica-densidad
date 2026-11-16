@@ -17,8 +17,8 @@ const MATERIALES = [
   { id: 'plomo',    nombre: 'Plomo',    rho: 11.34 },
 ];
 
-// Las 20 muestras son fijas para que el profesor pueda repartirlas por número
-// y tener la clave. Todas se hunden en agua.
+// Las 30 muestras (una por alumno) son fijas para que el profesor pueda
+// repartirlas por número y tener la clave. Todas se hunden en agua.
 //   vol: volumen real (cm³); ancho: anchura dibujada (px). El alto sale del
 //   volumen, para que la muestra se vea del tamaño del agua que desplaza.
 //   Las de ancho menor de 30 px caben también en la probeta de 50 mL.
@@ -43,6 +43,16 @@ const MUESTRAS_DEF = [
   { n: 18, mat: 'titanio',  vol: 22.5, ancho: 38 },
   { n: 19, mat: 'cobre',    vol: 17.3, ancho: 34 },
   { n: 20, mat: 'plomo',    vol: 20.6, ancho: 37 },
+  { n: 21, mat: 'pvc',      vol: 22.0, ancho: 40 },
+  { n: 22, mat: 'magnesio', vol: 12.0, ancho: 29 },
+  { n: 23, mat: 'titanio',  vol: 19.0, ancho: 36 },
+  { n: 24, mat: 'teflon',   vol: 18.0, ancho: 37 },
+  { n: 25, mat: 'hierro',   vol: 20.0, ancho: 37 },
+  { n: 26, mat: 'pvc',      vol: 17.0, ancho: 35 },
+  { n: 27, mat: 'cobre',    vol: 21.0, ancho: 38 },
+  { n: 28, mat: 'magnesio', vol: 23.6, ancho: 40 },
+  { n: 29, mat: 'teflon',   vol: 11.4, ancho: 28.5 },
+  { n: 30, mat: 'titanio',  vol: 13.0, ancho: 29 },
 ];
 
 const MUESTRAS = MUESTRAS_DEF.map(d => {
